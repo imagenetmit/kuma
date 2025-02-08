@@ -98,6 +98,9 @@ export default {
 
 <style>
 .badge {
-    min-width: 62px;
+    min-width: 60px;
+    padding: 0.25em 0.6em;
+    font-size: 0.75em;
+    line-height: 1.2;
 }
 </style>

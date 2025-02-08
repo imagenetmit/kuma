@@ -12,7 +12,29 @@ const viteCompressionFilter = /\.(js|mjs|json|css|html|svg)$/i;
 // https://vitejs.dev/config/
 export default defineConfig({
     server: {
-        port: 3000,
+        port: 3004,
+        proxy: {
+            // Handle API and socket.io requests
+            '^/api': {
+                target: 'http://localhost:3003',
+                changeOrigin: true
+            },
+            '^/socket.io': {
+                target: 'http://localhost:3003',
+                ws: true,
+                changeOrigin: true,
+                secure: false
+            },
+            // Handle setup and other backend routes
+            '^/setup-database': {
+                target: 'http://localhost:3003',
+                changeOrigin: true
+            },
+            '^/upload': {
+                target: 'http://localhost:3003',
+                changeOrigin: true
+            }
+        }
     },
     define: {
         "FRONTEND_VERSION": JSON.stringify(process.env.npm_package_version),

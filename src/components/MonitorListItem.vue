@@ -4,7 +4,7 @@
             <!-- Checkbox -->
             <div v-if="isSelectMode" class="select-input-wrapper">
                 <input
-                    class="form-check-input select-input"
+                    class="form-check-input select-input form-check-input-sm"
                     type="checkbox"
                     :aria-label="$t('Check/Uncheck')"
                     :checked="isSelected(monitor.id)"
@@ -12,26 +12,26 @@
                 />
             </div>
 
-            <router-link :to="monitorURL(monitor.id)" class="item" :class="{ 'disabled': ! monitor.active }">
-                <div class="row">
+            <router-link :to="monitorURL(monitor.id)" class="item compact-item" :class="{ 'disabled': ! monitor.active }">
+                <div class="row g-1">
                     <div class="col-9 col-md-8 small-padding" :class="{ 'monitor-item': $root.userHeartbeatBar == 'bottom' || $root.userHeartbeatBar == 'none' }">
                         <div class="info">
-                            <Uptime :monitor="monitor" type="24" :pill="true" />
+                            <Uptime :monitor="monitor" type="24" :pill="true" class="compact-uptime" />
                             <span v-if="hasChildren" class="collapse-padding" @click.prevent="changeCollapsed">
-                                <font-awesome-icon icon="chevron-down" class="animated" :class="{ collapsed: isCollapsed}" />
+                                <font-awesome-icon icon="chevron-down" class="animated" :class="{ collapsed: isCollapsed}" size="sm" />
                             </span>
-                            {{ monitor.name }}
+                            <span class="monitor-name">{{ monitor.name }}</span>
                         </div>
                         <div v-if="monitor.tags.length > 0" class="tags">
-                            <Tag v-for="tag in monitor.tags" :key="tag" :item="tag" :size="'sm'" />
+                            <Tag v-for="tag in monitor.tags" :key="tag" :item="tag" :size="'sm'" class="compact-tag" />
                         </div>
                     </div>
-                    <div v-show="$root.userHeartbeatBar == 'normal'" :key="$root.userHeartbeatBar" class="col-3 col-md-4">
+                    <div v-show="$root.userHeartbeatBar == 'normal'" :key="$root.userHeartbeatBar" class="col-3 col-md-4 pe-2">
                         <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="monitor.id" />
                     </div>
                 </div>
 
-                <div v-if="$root.userHeartbeatBar == 'bottom'" class="row">
+                <div v-if="$root.userHeartbeatBar == 'bottom'" class="row g-1">
                     <div class="col-12 bottom-style">
                         <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="monitor.id" />
                     </div>
@@ -137,7 +137,7 @@ export default {
         },
         depthMargin() {
             return {
-                marginLeft: `${31 * this.depth}px`,
+                marginLeft: `${20 * this.depth}px`,
             };
         },
     },
@@ -214,25 +214,19 @@ export default {
 @import "../assets/vars.scss";
 
 .small-padding {
-    padding-left: 5px !important;
-    padding-right: 5px !important;
+    padding: 0 1px !important;
 }
 
 .collapse-padding {
-    padding-left: 8px !important;
-    padding-right: 2px !important;
+    padding: 0 1px !important;
 }
 
-// .monitor-item {
-//     width: 100%;
-// }
-
 .tags {
-    margin-top: 4px;
-    padding-left: 67px;
+    margin: 0;
+    padding-left: 20px;
     display: flex;
     flex-wrap: wrap;
-    gap: 0;
+    gap: 1px;
 }
 
 .collapsed {
@@ -240,17 +234,112 @@ export default {
 }
 
 .animated {
-    transition: all 0.2s $easing-in;
+    transition: all 0.15s $easing-in;
 }
 
 .select-input-wrapper {
     float: left;
-    margin-top: 15px;
-    margin-left: 3px;
-    margin-right: 10px;
-    padding-left: 4px;
+    margin: 1px;
+    padding: 0;
     position: relative;
     z-index: 15;
+}
+
+.compact-item {
+    display: block;
+    padding: 1px 2px;
+    text-decoration: none;
+    color: inherit;
+    //border-radius: 1px;
+    margin: 0;
+    
+    &:hover {
+        background-color: rgba(0, 0, 0, 0.03);
+        outline: 1px rgb(26, 41, 20);  /* Debug outline */
+    }
+
+    &.disabled {
+        opacity: 0.6;
+    }
+}
+
+.info {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
+}
+
+.monitor-name {
+    //outline: 1px dashed purple;  /* Debug outline */
+    margin: 0;
+    padding: 0 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.compact-uptime {
+    :deep(.badge) {
+        padding: 0.2em 0.4em;
+        font-size: 0.75em;
+    }
+}
+
+.compact-tag {
+    :deep(.badge) {
+        padding: 0.2em 0.4em;
+        font-size: 0.7em;
+    }
+}
+
+.item {
+    //outline: 2px solid green;  /* Debug outline */
+    //background: rgba(0, 255, 0, 0.05);  /* Light green background */
+    display: flex !important;  // Override block display
+    flex-direction: column;
+    //padding: 0 !important;
+    margin: 0;
+}
+
+.row {
+    //outline: 1px dashed purple;  /* Debug outline */
+    //background: rgba(128, 0, 128, 0.05);  /* Light purple background */
+    --bs-gutter-x: 0;
+    --bs-gutter-y: 0;  //this was the bastard that was causing the issue
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.col-9, .col-md-8, .col-3, .col-md-4 {
+    padding: 0;
+    //width: auto;  // Let content determine width
+    //flex: 0 0 auto;  // Don't grow or shrink
+}
+
+.col-3, .col-md-4 {
+    margin-left: auto;  // Push to right
+}
+
+.compact-item {
+    padding: 1px !important;
+    text-decoration: none;
+    color: inherit;
+    margin: 0;
+    //line-height: 1;
+    
+    &:hover {
+        background-color: rgba(0, 0, 0, 0.473);
+        //outline: 1px rgb(26, 41, 20);  /* Debug outline */
+    }
+
+    &.disabled {
+        opacity: 0.6;
+    }
 }
 
 </style>

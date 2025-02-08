@@ -1,18 +1,18 @@
 <template>
     <div
         class="tag-wrapper rounded d-inline-flex"
-        :class="{ 'px-3': size == 'normal',
+        :class="{ 'px-2': size == 'normal',
                   'py-1': size == 'normal',
-                  'm-2': size == 'normal',
-                  'px-2': size == 'sm',
+                  'm-1': size == 'normal',
+                  'px-1': size == 'sm',
                   'py-0': size == 'sm',
                   'mx-1': size == 'sm',
         }"
-        :style="{ backgroundColor: item.color, fontSize: size == 'sm' ? '0.7em' : '1em' }"
+        :style="{ backgroundColor: item.color, fontSize: size == 'sm' ? '0.65em' : '0.85em' }"
     >
         <span class="tag-text">{{ displayText }}</span>
         <span v-if="remove != null" class="ps-1 btn-remove" @click="remove(item)">
-            <font-awesome-icon icon="times" />
+            <font-awesome-icon icon="times" size="xs" />
         </span>
     </div>
 </template>
@@ -62,6 +62,7 @@ export default {
 .tag-wrapper {
     color: white;
     opacity: 0.85;
+    line-height: 1.2;
 
     .dark & {
         opacity: 1;
@@ -69,16 +70,18 @@ export default {
 }
 
 .tag-text {
-    padding-bottom: 1px !important;
+    padding-bottom: 0 !important;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
+    max-width: 120px;
 }
 
 .btn-remove {
-    font-size: 0.9em;
-    line-height: 24px;
+    font-size: 0.8em;
+    line-height: 18px;
     opacity: 0.3;
+    padding: 0 2px;
 }
 
 .btn-remove:hover {

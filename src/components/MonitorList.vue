@@ -1,23 +1,23 @@
 <template>
-    <div class="shadow-box mb-3" :style="boxStyle">
+    <div class="shadow-box mb-2" :style="boxStyle">
         <div class="list-header">
-            <div class="header-top">
-                <button class="btn btn-outline-normal ms-2" :class="{ 'active': selectMode }" type="button" @click="selectMode = !selectMode">
+            <div class="header-top py-1 px-2">
+                <button class="btn btn-sm btn-outline-normal" :class="{ 'active': selectMode }" type="button" @click="selectMode = !selectMode">
                     {{ $t("Select") }}
                 </button>
 
                 <div class="placeholder"></div>
                 <div class="search-wrapper">
                     <a v-if="searchText == ''" class="search-icon">
-                        <font-awesome-icon icon="search" />
+                        <font-awesome-icon icon="search" size="sm" />
                     </a>
                     <a v-if="searchText != ''" class="search-icon" @click="clearSearchText">
-                        <font-awesome-icon icon="times" />
+                        <font-awesome-icon icon="times" size="sm" />
                     </a>
-                    <form>
+                    <form class="compact-form">
                         <input
                             v-model="searchText"
-                            class="form-control search-input"
+                            class="form-control form-control-sm search-input"
                             :placeholder="$t('Search...')"
                             :aria-label="$t('Search monitored sites')"
                             autocomplete="off"
@@ -25,28 +25,32 @@
                     </form>
                 </div>
             </div>
-            <div class="header-filter">
+            <div class="header-filter px-2">
                 <MonitorListFilter :filterState="filterState" @update-filter="updateFilter" />
             </div>
 
             <!-- Selection Controls -->
-            <div v-if="selectMode" class="selection-controls px-2 pt-2">
+            <div v-if="selectMode" class="selection-controls px-2 py-1">
                 <input
                     v-model="selectAll"
                     class="form-check-input select-input"
                     type="checkbox"
                 />
 
-                <button class="btn-outline-normal" @click="pauseDialog"><font-awesome-icon icon="pause" size="sm" /> {{ $t("Pause") }}</button>
-                <button class="btn-outline-normal" @click="resumeSelected"><font-awesome-icon icon="play" size="sm" /> {{ $t("Resume") }}</button>
+                <button class="btn btn-sm btn-outline-normal" @click="pauseDialog">
+                    <font-awesome-icon icon="pause" size="sm" /> {{ $t("Pause") }}
+                </button>
+                <button class="btn btn-sm btn-outline-normal" @click="resumeSelected">
+                    <font-awesome-icon icon="play" size="sm" /> {{ $t("Resume") }}
+                </button>
 
-                <span v-if="selectedMonitorCount > 0">
+                <span v-if="selectedMonitorCount > 0" class="small">
                     {{ $t("selectedMonitorCount", [ selectedMonitorCount ]) }}
                 </span>
             </div>
         </div>
-        <div ref="monitorList" class="monitor-list" :class="{ scrollbar: scrollbar }" :style="monitorListStyle" data-testid="monitor-list">
-            <div v-if="Object.keys($root.monitorList).length === 0" class="text-center mt-3">
+        <div ref="monitorList" class="monitor-list px-2" :class="{ scrollbar: scrollbar }" :style="monitorListStyle" data-testid="monitor-list">
+            <div v-if="Object.keys($root.monitorList).length === 0" class="text-center mt-2">
                 {{ $t("No Monitors, please") }} <router-link to="/add">{{ $t("add one") }}</router-link>
             </div>
 
@@ -393,27 +397,33 @@ export default {
 @import "../assets/vars.scss";
 
 .shadow-box {
-    height: calc(100vh - 150px);
+    height: calc(100vh - 130px);
     position: sticky;
-    top: 10px;
+    top: 5px;
+    padding: 0 !important;
+    margin: 0;
 }
 
 .small-padding {
-    padding-left: 5px !important;
-    padding-right: 5px !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
 }
 
 .list-header {
     border-bottom: 1px solid #dee2e6;
-    border-radius: 10px 10px 0 0;
-    margin: -10px;
-    margin-bottom: 10px;
-    padding: 10px;
+    border-radius: 4px 4px 0 0;
+    margin: 0 0 6px 0;  // Remove negative margins
+    padding: 4px 4px 2px 4px;  // Minimal padding
 
     .dark & {
         background-color: $dark-header-bg;
         border-bottom: 0;
     }
+}
+
+.header-top, .header-filter {
+    padding: 2px;  // Minimal padding
+    margin: 0;
 }
 
 .header-top {
@@ -427,24 +437,15 @@ export default {
     align-items: center;
 }
 
-@media (max-width: 770px) {
-    .list-header {
-        margin: -20px;
-        margin-bottom: 10px;
-        padding: 5px;
-    }
-}
-
 .search-wrapper {
     display: flex;
     align-items: center;
 }
 
 .search-icon {
-    padding: 10px;
+    padding: 6px;  // Reduced from 10px
     color: #c0c0c0;
 
-    // Clear filter button (X)
     svg[data-icon="times"] {
         cursor: pointer;
         transition: all ease-in-out 0.1s;
@@ -457,29 +458,48 @@ export default {
 
 .search-input {
     max-width: 15em;
+    height: 30px;  // Added to make input smaller
+    font-size: 0.875rem;  // Added for smaller text
 }
 
-.monitor-item {
-    width: 100%;
-}
-
-.tags {
-    margin-top: 4px;
-    padding-left: 67px;
+.monitor-list {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0;
-}
-
-.bottom-style {
-    padding-left: 67px;
-    margin-top: 5px;
+    flex-direction: column;
+    padding: 0 !important;
+    margin: 0;
+    > * {
+        margin-bottom: 1px;
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
 }
 
 .selection-controls {
-    margin-top: 5px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;  // Reduced from 10px
+}
+
+// Added compact form styles
+.compact-form {
+    margin: 0;
+    
+    input {
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+.px-2 {
+    padding: 0 !important;
+}
+
+// Adjust for mobile
+@media (max-width: 770px) {
+    .list-header {
+        margin: -12px;  // Reduced from -20px
+        margin-bottom: 8px;
+        padding: 4px;  // Reduced from 5px
+    }
 }
 </style>

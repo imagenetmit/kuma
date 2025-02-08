@@ -80,7 +80,7 @@ export function getResBaseURL() {
     if (env === "development" && isDevContainer()) {
         return location.protocol + "//" + getDevContainerServerHostname();
     } else if (env === "development" || localStorage.dev === "dev") {
-        return location.protocol + "//" + location.hostname + ":3001";
+        return location.protocol + "//" + location.hostname + ":3003";
     } else {
         return "";
     }

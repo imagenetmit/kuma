@@ -1,52 +1,11 @@
 <template>
     <transition ref="tableContainer" name="slide-fade" appear>
         <div v-if="$route.name === 'DashboardHome'">
-            <h1 class="mb-3">
-                {{ $t("Quick Stats") }}
-            </h1>
+            
 
-            <div class="shadow-box big-padding text-center mb-4">
-                <div class="row">
-                    <div class="col">
-                        <h3>{{ $t("Up") }}</h3>
-                        <span
-                            class="num"
-                            :class="$root.stats.up === 0 && 'text-secondary'"
-                        >
-                            {{ $root.stats.up }}
-                        </span>
-                    </div>
-                    <div class="col">
-                        <h3>{{ $t("Down") }}</h3>
-                        <span
-                            class="num"
-                            :class="$root.stats.down > 0 ? 'text-danger' : 'text-secondary'"
-                        >
-                            {{ $root.stats.down }}
-                        </span>
-                    </div>
-                    <div class="col">
-                        <h3>{{ $t("Maintenance") }}</h3>
-                        <span
-                            class="num"
-                            :class="$root.stats.maintenance > 0 ? 'text-maintenance' : 'text-secondary'"
-                        >
-                            {{ $root.stats.maintenance }}
-                        </span>
-                    </div>
-                    <div class="col">
-                        <h3>{{ $t("Unknown") }}</h3>
-                        <span class="num text-secondary">{{ $root.stats.unknown }}</span>
-                    </div>
-                    <div class="col">
-                        <h3>{{ $t("pauseDashboardHome") }}</h3>
-                        <span class="num text-secondary">{{ $root.stats.pause }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="shadow-box table-shadow-box" style="overflow-x: hidden;">
-                <table class="table table-borderless table-hover">
+            
+            <div class="shadow-box table-shadow-box py-2 px-3" style="overflow-x: hidden;">
+                <table class="table table-borderless table-hover table-sm">
                     <thead>
                         <tr>
                             <th>{{ $t("Name") }}</th>
@@ -211,18 +170,28 @@ export default {
 @import "../assets/vars";
 
 .num {
-    font-size: 30px;
+    font-size: 24px;
+    line-height: 1.2;
     color: $primary;
     font-weight: bold;
     display: block;
 }
 
 .shadow-box {
-    padding: 20px;
+    padding: 12px;
 }
 
 table {
-    font-size: 14px;
+    font-size: 13px;
+
+    th {
+        padding: 0.3rem;
+        font-size: 12px;
+    }
+
+    td {
+        padding: 0.3rem;
+    }
 
     tr {
         transition: all ease-in-out 0.2ms;

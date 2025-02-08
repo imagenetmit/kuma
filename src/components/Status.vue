@@ -1,5 +1,5 @@
 <template>
-    <span class="badge rounded-pill" :class=" 'bg-' + color ">{{ text }}</span>
+    <span class="badge rounded-pill compact-status" :class=" 'bg-' + color ">{{ text }}</span>
 </template>
 
 <script>
@@ -58,6 +58,15 @@ export default {
 
 <style scoped>
     span {
-        min-width: 64px;
+        min-width: 52px;
+        padding: 0.2em 0.5em;
+        font-size: 0.75em;
+        line-height: 1.2;
+    }
+
+    .compact-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 </style>

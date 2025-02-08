@@ -2,13 +2,13 @@
     <transition name="slide-fade" appear>
         <div v-if="monitor">
             <router-link v-if="group !== ''" :to="monitorURL(monitor.parent)"> {{ group }}</router-link>
-            <h1>
+            <h2>
                 {{ monitor.name }}
                 <div class="monitor-id">
                     <div class="hash">#</div>
                     <div>{{ monitor.id }}</div>
                 </div>
-            </h1>
+            </h2>
             <p v-if="monitor.description">{{ monitor.description }}</p>
             <div class="d-flex">
                 <div class="tags">
@@ -717,8 +717,8 @@ export default {
 }
 
 .shadow-box {
-    padding: 20px;
-    margin-top: 25px;
+    padding: 10px;
+    margin-top: 10px;
 }
 
 .word {

@@ -228,9 +228,9 @@ export default {
 
     mounted() {
         if (this.size !== "big") {
-            this.beatWidth = 5;
-            this.beatHeight = 16;
-            this.beatHoverAreaPadding = 2;
+            this.beatWidth = 4;
+            this.beatHeight = 14;
+            this.beatHoverAreaPadding = 1;
         }
 
         // Suddenly, have an idea how to handle it universally.
@@ -288,19 +288,14 @@ export default {
         display: inline-block;
 
         &:not(.empty):hover {
-            transition: all ease-in-out 0.15s;
+            transition: all ease-in-out 0.1s;
             opacity: 0.8;
             transform: scale(var(--hover-scale));
         }
 
         .beat {
             background-color: $primary;
-            border-radius: $border-radius;
-
-            /*
-            pointer-events needs to be changed because
-            tooltip momentarily disappears when crossing between .beat-hover-area and .beat
-            */
+            border-radius: 1px;
             pointer-events: none;
 
             &.empty {
@@ -330,16 +325,17 @@ export default {
 
 .word {
     color: $secondary-text;
-    font-size: 12px;
+    font-size: 11px;
+    margin-top: 2px;
 }
 
 .connecting-line {
     flex-grow: 1;
     height: 1px;
     background-color: #ededed;
-    margin-left: 10px;
-    margin-right: 10px;
-    margin-top: 2px;
+    margin-left: 6px;
+    margin-right: 6px;
+    margin-top: 1px;
 
     .dark & {
         background-color: #333;

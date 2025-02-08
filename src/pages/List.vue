@@ -1,6 +1,11 @@
 <template>
     <transition name="slide-fade" appear>
-        <MonitorList :scrollbar="true" />
+        <div class="list-container">
+            <MonitorList 
+                :scrollbar="true" 
+                class="compact-list" 
+            />
+        </div>
     </transition>
 </template>
 
@@ -17,8 +22,17 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/vars";
 
-.shadow-box {
-    padding: 20px;
+.list-container {
+    padding: 0.5rem;
 }
 
+.shadow-box {
+    padding: 0.75rem;
+}
+
+.compact-list {
+    :deep(.monitor-list-item) {
+        margin-bottom: 0.5rem;
+    }
+}
 </style>

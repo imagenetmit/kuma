@@ -4,7 +4,7 @@ dist
 dist-ssr
 *.local
 .idea
-
+db
 /data
 !/data/.gitkeep
 /data*

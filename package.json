@@ -1,10 +1,10 @@
 {
-    "name": "uptime-kuma",
+    "name": "kuma",
     "version": "2.0.0-beta.1",
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/louislam/uptime-kuma.git"
+        "url": "https://github.com/imagenetmit/kuma.git"
     },
     "engines": {
         "node": "18 || >= 20.4.0"
@@ -17,8 +17,8 @@
         "lint-fix:style": "stylelint \"**/*.{vue,css,scss}\" --fix --ignore-path .gitignore",
         "lint": "npm run lint:js && npm run lint:style",
         "lint:prod": "npm run lint:js-prod && npm run lint:style",
-        "dev": "concurrently -k -r \"wait-on tcp:3000 && npm run start-server-dev \" \"npm run start-frontend-dev\"",
-        "start-frontend-dev": "cross-env NODE_ENV=development vite --host --config ./config/vite.config.js",
+        "dev": "concurrently -k -r \"wait-on tcp:3004 && npm run start-server-dev \" \"npm run start-frontend-dev\"",
+        "start-frontend-dev": "cross-env NODE_ENV=development vite --host --port 3004 --config ./config/vite.config.js",
         "start-frontend-devcontainer": "cross-env NODE_ENV=development DEVCONTAINER=1 vite --host --config ./config/vite.config.js",
         "start": "npm run start-server",
         "start-server": "node server/server.js",

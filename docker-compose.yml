@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  kuma:
+    build:
+      context: .
+      dockerfile: docker/dockerfile
+      args:
+        - NODE_ENV=production
+        - DEVCONTAINER=0
+        - DOMAIN=kuma.imagenetmit.com
+    container_name: kuma
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./db:/app/db
+      - ./data:/app/data
+    environment:
+      - PORT=3003
+      - NODE_ENV=production
+      - TRUST_PROXY=1
+      - DOMAIN=kuma.imagenetmit.com
+      - UPTIME_KUMA_HOST=0.0.0.0
+      - PROXY_PROTOCOL=https
+      - PROXY_HOST=kuma.imagenetmit.com
+      - PROXY_PORT=443
+    networks:
+      - nginx
+    restart: unless-stopped
+
+networks:
+  nginx:
+    external: true

@@ -109,11 +109,14 @@ export default {
             } else if (env === "development" || localStorage.dev === "dev") {
                 url = protocol + location.hostname + ":3003";
             } else {
-                // Connect to the current url
-                url = undefined;
+                // In production with separate containers, use the VITE_BACKEND_URL
+                url = import.meta.env.VITE_BACKEND_URL || undefined;
             }
 
-            socket = io(url);
+            socket = io(url, {
+                transports: ['websocket', 'polling'],
+                path: '/socket.io'
+            });
 
             socket.on("info", (info) => {
                 this.info = info;

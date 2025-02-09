@@ -1,15 +1,19 @@
 version: '3.8'
 
 services:
-  kuma:
+  base:
+    build:
+      context: .
+      dockerfile: docker/debian-base.dockerfile
+      target: base2
+    image: kuma-backend:base2
+
+  backend:
     build:
       context: .
       dockerfile: docker/dockerfile
-      args:
-        - NODE_ENV=production
-        - DEVCONTAINER=0
-        - DOMAIN=kuma.imagenetmit.com
-    container_name: kuma
+    container_name: kuma-backend
+    user: "node"
     ports:
       - "3003:3003"
     volumes:
@@ -18,15 +22,28 @@ services:
     environment:
       - PORT=3003
       - NODE_ENV=production
-      - TRUST_PROXY=1
-      - DOMAIN=kuma.imagenetmit.com
-      - UPTIME_KUMA_HOST=0.0.0.0
-      - PROXY_PROTOCOL=https
-      - PROXY_HOST=kuma.imagenetmit.com
-      - PROXY_PORT=443
+      - UPTIME_KUMA_WS_ORIGIN_CHECK=bypass
+      - HOST=0.0.0.0
+      - UPTIME_KUMA_IS_CONTAINER=1
     networks:
       - nginx
     restart: unless-stopped
+    depends_on:
+      - base
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/dockerfile.frontend
+    container_name: kuma-frontend
+    ports:
+      - "3004:3004"
+    environment:
+      - VITE_BACKEND_URL=https://kuma.imagenetmit.com
+    networks:
+      - nginx
+    depends_on:
+      - backend
 
 networks:
   nginx:

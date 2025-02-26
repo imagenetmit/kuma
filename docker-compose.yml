@@ -21,7 +21,7 @@ services:
       - ./data:/app/data
     environment:
       - PORT=3003
-      - NODE_ENV=production
+      - NODE_ENV=development
       - UPTIME_KUMA_WS_ORIGIN_CHECK=bypass
       - HOST=0.0.0.0
       - UPTIME_KUMA_IS_CONTAINER=1

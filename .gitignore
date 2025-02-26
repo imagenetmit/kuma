@@ -14,7 +14,8 @@ db
 /out
 /tmp
 .env
-
+.venv/
+/db*
 /extra/healthcheck.exe
 /extra/healthcheck
 /extra/healthcheck-armv7

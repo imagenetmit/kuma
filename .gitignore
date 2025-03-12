@@ -16,7 +16,10 @@ db
 .env
 .venv
 /db*
-
+*.pyc
+*.db
+*.ipynb
+*.json
 /extra/healthcheck.exe
 /extra/healthcheck
 /extra/healthcheck-armv7
@@ -26,3 +29,4 @@ extra/exe-builder/obj
 
 .vs
 .vscode
+*.log

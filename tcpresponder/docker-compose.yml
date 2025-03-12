@@ -1,0 +1,27 @@
+services:
+  tcp-monitor:
+    build: .
+    ports:
+      - "50000:50000"  # TCP monitor port
+      - "8008:8008"    # API port
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    environment:
+      - NINJA_CLIENT_ID=${NINJA_CLIENT_ID}
+      - NINJA_CLIENT_SECRET=${NINJA_CLIENT_SECRET}
+      - NINJA_TOKEN_URL=${NINJA_TOKEN_URL}
+      - NINJA_SCOPE=${NINJA_SCOPE}
+      - NINJA_API_BASE_URL=${NINJA_API_BASE_URL}
+    networks:
+      - nginx
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/ip"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  nginx:
+    external: true

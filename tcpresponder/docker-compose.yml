@@ -1,9 +1,7 @@
 services:
   tcp-monitor:
     build: .
-    ports:
-      - "50000:50000"  # TCP monitor port
-      - "8008:8008"    # API port
+    network_mode: "host"  # This gives the container direct access to host networking
     volumes:
       - ./data:/app/data
     restart: unless-stopped
@@ -13,8 +11,6 @@ services:
       - NINJA_TOKEN_URL=${NINJA_TOKEN_URL}
       - NINJA_SCOPE=${NINJA_SCOPE}
       - NINJA_API_BASE_URL=${NINJA_API_BASE_URL}
-    networks:
-      - nginx
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8008/ip"]
       interval: 30s

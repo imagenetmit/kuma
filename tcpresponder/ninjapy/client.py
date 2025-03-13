@@ -5,6 +5,13 @@ from .exceptions import NinjaRMMError, NinjaRMMAuthError, NinjaRMMValidationErro
 from .auth import TokenManager
 from .enums import NodeApprovalMode
 import time
+import logging
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('ninjapy.client')
 
 class NinjaRMMClient:
     """
@@ -65,6 +72,17 @@ class NinjaRMMClient:
             "Accept": "application/json"
         })
 
+        # Configure retries with exponential backoff
+        retries = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["HEAD", "GET", "OPTIONS", "POST", "PUT", "PATCH", "DELETE"]
+        )
+        adapter = HTTPAdapter(max_retries=retries)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
+
     def _request(
         self, 
         method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"], 
@@ -99,24 +117,35 @@ class NinjaRMMClient:
         })
         
         url = f"{self.base_url}{endpoint}"
-        
+        logger.info(f"Preparing request: {method} {url} with kwargs: {kwargs}")
+
         try:
-            response = self.session.request(method, url, **kwargs)
+            logger.info("Sending HTTP request now...")
+            # Explicitly set a timeout to prevent indefinite hangs
+            response = self.session.request(method, url, timeout=10, **kwargs)
+            logger.info(f"HTTP request completed with status code: {response.status_code}")
             
-            # Handle rate limiting
+            # Handle rate limiting explicitly
             if response.status_code == 429:
-                retry_after = int(response.headers.get('Retry-After', 60))
+                retry_after = int(response.headers.get('Retry-After', 10))
+                logger.warning(f"Rate limited. Retrying after {retry_after} seconds.")
                 time.sleep(retry_after)
                 return self._request(method, endpoint, **kwargs)
             
             response.raise_for_status()
             
             if response.status_code == 204:
+                logger.info("Received 204 No Content response.")
                 return None
                 
+            logger.info("Parsing JSON response.")
             return response.json()
             
+        except requests.exceptions.Timeout:
+            logger.error("Request timed out.")
+            raise NinjaRMMError("Request timed out.")
         except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTPError encountered: {str(e)}")
             try:
                 error_data = e.response.json()
                 message = error_data.get('message', str(e))
@@ -134,6 +163,7 @@ class NinjaRMMClient:
                 raise NinjaRMMAPIError(message, e.response.status_code, error_data)
             
         except requests.exceptions.RequestException as e:
+            logger.error(f"RequestException encountered: {str(e)}")
             raise NinjaRMMError(f"Request failed: {str(e)}")
 
     def get_organizations(self, page_size: Optional[int] = None, after: Optional[int] = None, expand: Optional[str] = None,

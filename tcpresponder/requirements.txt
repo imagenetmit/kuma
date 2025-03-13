@@ -5,3 +5,4 @@ pydantic
 requests
 pandas
 python-dotenv
+pymysql

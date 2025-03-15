@@ -55,9 +55,11 @@ class TCPMonitor:
         # # Send webhook notification
         # await self.send_webhook(client_ip)
         try:
-            device = ninja.search_devices(query=client_ip, expand="organization,location")
+            device = ninja.search_devices(query=client_ip, page_size=1, expand="organization,location")
+            location = device['devices'][0]['references']['location']['name']
+            org = device['devices'][0]['references']['organization']['name']
             
-            logging.info(f"Accepted connection from: {client_ip}")
+            logging.info(f"Accepted connection from: {client_ip} at {location} in {org}")
             
             # Send webhook notification
             await self.send_webhook(client_ip)

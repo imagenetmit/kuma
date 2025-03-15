@@ -7,6 +7,11 @@ services:
     environment:
       - NODE_ENV=production
       - UPTIME_KUMA_HOST=0.0.0.0
+      # Add Node.js memory settings
+      - NODE_OPTIONS=--max-old-space-size=768
+      # Add performance settings
+      - UPTIME_KUMA_DISABLE_SEND_METRICS=true
+      - UPTIME_KUMA_DISABLE_REMOTE_BROWSER=true
     volumes:
       - ./data:/app/data
     ports:
@@ -15,6 +20,22 @@ services:
     restart: unless-stopped
     networks:
       - nginx
+    # Add resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+        reservations:
+          memory: 768M
+          cpus: '0.5'
+    # Add healthcheck to monitor the application
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3003/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   # tcp-monitor:
   #   build: 
@@ -48,6 +69,14 @@ services:
       - MYSQL_DATABASE=${UPTIME_KUMA_DB_NAME}
       - MYSQL_USER=${UPTIME_KUMA_DB_USERNAME}
       - MYSQL_PASSWORD=${UPTIME_KUMA_DB_PASSWORD}
+      # Improved database performance settings
+      - MYSQL_INNODB_BUFFER_POOL_SIZE=512M
+      - MYSQL_INNODB_LOG_FILE_SIZE=128M
+      - MYSQL_MAX_CONNECTIONS=200
+      - MYSQL_INNODB_FLUSH_METHOD=O_DIRECT
+      - MYSQL_INNODB_FLUSH_LOG_AT_TRX_COMMIT=2
+      - MYSQL_QUERY_CACHE_TYPE=1
+      - MYSQL_QUERY_CACHE_SIZE=32M
     volumes:
       - ./data/mariadb:/var/lib/mysql
     ports:
@@ -55,6 +84,15 @@ services:
     restart: unless-stopped
     networks:
       - nginx
+    # Add resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${UPTIME_KUMA_DB_PASSWORD}"]
       interval: 10s

@@ -7,6 +7,11 @@ services:
     environment:
       - NODE_ENV=production
       - UPTIME_KUMA_HOST=0.0.0.0
+      - UPTIME_KUMA_DB_HOSTNAME=${UPTIME_KUMA_DB_HOSTNAME}
+      - UPTIME_KUMA_DB_PORT=3306
+      - UPTIME_KUMA_DB_USERNAME=${UPTIME_KUMA_DB_USERNAME}
+      - UPTIME_KUMA_DB_PASSWORD=${UPTIME_KUMA_DB_PASSWORD}
+      - UPTIME_KUMA_DB_NAME=${UPTIME_KUMA_DB_NAME}
       # Add Node.js memory settings
       - NODE_OPTIONS=--max-old-space-size=768
       # Add performance settings
@@ -18,17 +23,20 @@ services:
       # <Host Port>:<Container Port>
       - 3003:3003
     restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
     networks:
       - nginx
     # Add resource limits
     deploy:
       resources:
         limits:
+          memory: 4G
+          cpus: '2'
+        reservations:
           memory: 1G
           cpus: '1'
-        reservations:
-          memory: 768M
-          cpus: '0.5'
     # Add healthcheck to monitor the application
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3003/"]
@@ -88,13 +96,13 @@ services:
     deploy:
       resources:
         limits:
+          memory: 4G
+          cpus: '2'
+        reservations:
           memory: 1G
           cpus: '1'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${UPTIME_KUMA_DB_PASSWORD}"]
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p${UPTIME_KUMA_DB_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5

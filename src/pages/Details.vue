@@ -1,14 +1,14 @@
 <template>
     <transition name="slide-fade" appear>
         <div v-if="monitor">
-            <router-link v-if="group !== ''" :to="monitorURL(monitor.parent)"> {{ group }}</router-link>
-            <h2>
-                {{ monitor.name }}
+            <router-link v-if="group !== ''" :to="monitorURL(monitor.parent)"> {{ group }}</router-link> > {{ monitor.name }}
+            <!-- <h5> -->
+                
                 <div class="monitor-id">
                     <div class="hash">#</div>
                     <div>{{ monitor.id }}</div>
                 </div>
-            </h2>
+            <!-- </h5> -->
             <p v-if="monitor.description">{{ monitor.description }}</p>
             <div class="d-flex">
                 <div class="tags">
@@ -74,12 +74,12 @@
 
             <div class="shadow-box">
                 <div class="row">
-                    <div class="col-md-8">
+                    <div class="col-md-10">
                         <HeartbeatBar :monitor-id="monitor.id" />
                         <span class="word">{{ $t("checkEverySecond", [ monitor.interval ]) }}</span>
                     </div>
-                    <div class="col-md-4 text-center">
-                        <span class="badge rounded-pill" :class=" 'bg-' + status.color " style="font-size: 30px;" data-testid="monitor-status">{{ status.text }}</span>
+                    <div class="col-md-2 text-center">
+                        <span class="badge rounded-pill" :class=" 'bg-' + status.color " style="font-size: 16px;" data-testid="monitor-status">{{ status.text }}</span>
                     </div>
                 </div>
             </div>
@@ -116,7 +116,7 @@
             <div class="shadow-box big-padding text-center stats">
                 <div class="row">
                     <div v-if="monitor.type !== 'group'" class="col-12 col-sm col row d-flex align-items-center d-sm-block">
-                        <h4 class="col-4 col-sm-12">{{ pingTitle() }}</h4>
+                        <h6 class="col-4 col-sm-12">{{ pingTitle() }}</h6>
                         <p class="col-4 col-sm-12 mb-0 mb-sm-2">({{ $t("Current") }})</p>
                         <span class="col-4 col-sm-12 num">
                             <a href="#" @click.prevent="showPingChartBox = !showPingChartBox">
@@ -125,7 +125,7 @@
                         </span>
                     </div>
                     <div v-if="monitor.type !== 'group'" class="col-12 col-sm col row d-flex align-items-center d-sm-block">
-                        <h4 class="col-4 col-sm-12">{{ pingTitle(true) }}</h4>
+                        <h6 class="col-4 col-sm-12">{{ pingTitle(true) }}</h6>
                         <p class="col-4 col-sm-12 mb-0 mb-sm-2">(24{{ $t("-hour") }})</p>
                         <span class="col-4 col-sm-12 num">
                             <CountUp :value="avgPing" />
@@ -134,7 +134,7 @@
 
                     <!-- Uptime (24-hour) -->
                     <div class="col-12 col-sm col row d-flex align-items-center d-sm-block">
-                        <h4 class="col-4 col-sm-12">{{ $t("Uptime") }}</h4>
+                        <h6 class="col-4 col-sm-12">{{ $t("Uptime") }}</h6>
                         <p class="col-4 col-sm-12 mb-0 mb-sm-2">(24{{ $t("-hour") }})</p>
                         <span class="col-4 col-sm-12 num">
                             <Uptime :monitor="monitor" type="24" />
@@ -143,7 +143,7 @@
 
                     <!-- Uptime (30-day) -->
                     <div class="col-12 col-sm col row d-flex align-items-center d-sm-block">
-                        <h4 class="col-4 col-sm-12">{{ $t("Uptime") }}</h4>
+                        <h6 class="col-4 col-sm-12">{{ $t("Uptime") }}</h6>
                         <p class="col-4 col-sm-12 mb-0 mb-sm-2">(30{{ $t("-day") }})</p>
                         <span class="col-4 col-sm-12 num">
                             <Uptime :monitor="monitor" type="720" />
@@ -152,7 +152,7 @@
 
                     <!-- Uptime (1-year) -->
                     <div class="col-12 col-sm col row d-flex align-items-center d-sm-block">
-                        <h4 class="col-4 col-sm-12">{{ $t("Uptime") }}</h4>
+                        <h6 class="col-4 col-sm-12">{{ $t("Uptime") }}</h6>
                         <p class="col-4 col-sm-12 mb-0 mb-sm-2">(1{{ $t("-year") }})</p>
                         <span class="col-4 col-sm-12 num">
                             <Uptime :monitor="monitor" type="1y" />
@@ -160,7 +160,7 @@
                     </div>
 
                     <div v-if="tlsInfo" class="col-12 col-sm col row d-flex align-items-center d-sm-block">
-                        <h4 class="col-4 col-sm-12">{{ $t("Cert Exp.") }}</h4>
+                        <h6 class="col-4 col-sm-12">{{ $t("Cert Exp.") }}</h6>
                         <p class="col-4 col-sm-12 mb-0 mb-sm-2">(<Datetime :value="tlsInfo.certInfo.validTo" date-only />)</p>
                         <span class="col-4 col-sm-12 num">
                             <a href="#" @click.prevent="toggleCertInfoBox = !toggleCertInfoBox">{{ tlsInfo.certInfo.daysRemaining }} {{ $tc("day", tlsInfo.certInfo.daysRemaining) }}</a>

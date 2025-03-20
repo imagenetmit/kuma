@@ -224,7 +224,7 @@ export default {
             }
             this.chartPeriodHrs = period;
         } else {
-            this.chartPeriodHrs = "24";
+            this.chartPeriodHrs = "0";
         }
     },
     beforeUnmount() {
@@ -367,6 +367,7 @@ export default {
                         backgroundColor: "#5CDD8B38",
                         yAxisID: "y",
                         label: "ping",
+                        borderWidth: 1,
                     },
                     {
                         // Bar Chart

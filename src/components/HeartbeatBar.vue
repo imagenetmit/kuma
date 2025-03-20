@@ -35,7 +35,7 @@ export default {
         /** Size of the heartbeat bar */
         size: {
             type: String,
-            default: "big",
+            default: "sm",
         },
         /** ID of the monitor */
         monitorId: {

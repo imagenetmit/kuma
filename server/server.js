@@ -391,31 +391,30 @@ let needSetup = false;
 
         socket.on("login", async (data, callback) => {
             const clientIP = await server.getClientIP(socket);
+            const startTime = Date.now();
+            
+            log.info("auth", `[${startTime}] Login attempt starting for user ${data.username}. IP=${clientIP}`);
 
-            log.info("auth", `Login by username + password. IP=${clientIP}`);
-
-            // Checking
-            if (typeof callback !== "function") {
-                return;
-            }
-
-            if (!data) {
-                return;
-            }
-
-            // Login Rate Limit
+            try {
+                // Login Rate Limit check
             if (!await loginRateLimiter.pass(callback)) {
-                log.info("auth", `Too many failed requests for user ${data.username}. IP=${clientIP}`);
+                    log.info("auth", `[${Date.now()}] Rate limit hit for user ${data.username}. IP=${clientIP}`);
                 return;
             }
 
+                log.info("auth", `[${Date.now()}] Starting database user lookup`);
             let user = await login(data.username, data.password);
+                log.info("auth", `[${Date.now()}] Database lookup completed in ${Date.now() - startTime}ms`);
 
             if (user) {
                 if (user.twofa_status === 0) {
+                        const beforeLoginTime = Date.now();
+                        log.info("auth", `[${beforeLoginTime}] Starting afterLogin process`);
                     await afterLogin(socket, user);
+                        log.info("auth", `[${Date.now()}] afterLogin completed in ${Date.now() - beforeLoginTime}ms`);
 
-                    log.info("auth", `Successfully logged in user ${data.username}. IP=${clientIP}`);
+                        const endTime = Date.now();
+                        log.info("auth", `[${endTime}] Login successful. Total time: ${endTime - startTime}ms`);
 
                     callback({
                         ok: true,
@@ -471,11 +470,20 @@ let needSetup = false;
                 });
             }
 
+            } catch (e) {
+                const errorTime = Date.now();
+                log.error("auth", `[${errorTime}] Login error after ${errorTime - startTime}ms: ${e.message}`);
+                callback({
+                    ok: false,
+                    msg: e.message,
+                });
+            }
         });
 
         socket.on("logout", async (callback) => {
             // Rate Limit
             if (!await loginRateLimiter.pass(callback)) {
+                    return;
                 return;
             }
 

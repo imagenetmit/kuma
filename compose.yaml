@@ -71,7 +71,7 @@ services:
   #     start_period: 10s
   mariadb:
     image: mariadb:latest
-    container_name: kuma-mariadb
+    container_name: mariadb
     environment:
       - MYSQL_ROOT_PASSWORD=${UPTIME_KUMA_DB_PASSWORD}
       - MYSQL_DATABASE=${UPTIME_KUMA_DB_NAME}

@@ -228,8 +228,8 @@ export default {
 
     mounted() {
         if (this.size !== "big") {
-            this.beatWidth = 4;
-            this.beatHeight = 14;
+            this.beatWidth = 12;
+            this.beatHeight = 12;
             this.beatHoverAreaPadding = 1;
         }
 

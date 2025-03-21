@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div :style="depthMargin">
+        <div :style="depthMargin" class="">
             <!-- Checkbox -->
             <div v-if="isSelectMode" class="select-input-wrapper">
                 <input
@@ -14,21 +14,25 @@
 
             <router-link :to="monitorURL(monitor.id)" class="item compact-item" :class="{ 'disabled': ! monitor.active }">
                 <div class="row g-1">
-                    <div class="col-9 col-md-8 small-padding" :class="{ 'monitor-item': $root.userHeartbeatBar == 'bottom' || $root.userHeartbeatBar == 'none' }">
+                    <div class="col-8 col-md-7 small-padding" :class="{ 'monitor-item': $root.userHeartbeatBar == 'bottom' || $root.userHeartbeatBar == 'none' }">
                         <div class="info">
-                            <Uptime :monitor="monitor" type="24" :pill="true" class="compact-uptime" />
-                            <span v-if="hasChildren" class="collapse-padding" @click.prevent="changeCollapsed">
-                                <font-awesome-icon icon="chevron-down" class="animated" :class="{ collapsed: isCollapsed}" size="sm" />
-                            </span>
                             <span class="monitor-name">{{ monitor.name }}</span>
                         </div>
                         <div v-if="monitor.tags.length > 0" class="tags">
                             <Tag v-for="tag in monitor.tags" :key="tag" :item="tag" :size="'sm'" class="compact-tag" />
                         </div>
                     </div>
-                    <div v-show="$root.userHeartbeatBar == 'normal'" :key="$root.userHeartbeatBar" class="col-6 col-md-4 pe-3">
-                        <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="monitor.id" />
-                    </div>
+                    <!-- Only show heartbeat and uptime for child items -->
+                    <template v-if="depth > 0">
+                        <!-- Reduce heartbeat bar column width -->
+                        <div v-show="$root.userHeartbeatBar == 'normal'" :key="$root.userHeartbeatBar" class="col-3 col-md-4">
+                            <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="monitor.id" />
+                        </div>
+                        <!-- Add specific column size for uptime pill -->
+                        <div class="col-1 uptime-pill-container">
+                            <Uptime :monitor="monitor" type="24" :pill="true" class="compact-uptime" />
+                        </div>
+                    </template>
                 </div>
 
                 <div v-if="$root.userHeartbeatBar == 'bottom'" class="row g-1">
@@ -39,22 +43,20 @@
             </router-link>
         </div>
 
-        <transition name="slide-fade-up">
-            <div v-if="!isCollapsed" class="childs">
-                <MonitorListItem
-                    v-for="(item, index) in sortedChildMonitorList"
-                    :key="index"
-                    :monitor="item"
-                    :isSelectMode="isSelectMode"
-                    :isSelected="isSelected"
-                    :select="select"
-                    :deselect="deselect"
-                    :depth="depth + 1"
-                    :filter-func="filterFunc"
-                    :sort-func="sortFunc"
-                />
-            </div>
-        </transition>
+        <div class="childs">
+            <MonitorListItem
+                v-for="(item, index) in sortedChildMonitorList"
+                :key="index"
+                :monitor="item"
+                :isSelectMode="isSelectMode"
+                :isSelected="isSelected"
+                :select="select"
+                :deselect="deselect"
+                :depth="depth + 1"
+                :filter-func="filterFunc"
+                :sort-func="sortFunc"
+            />
+        </div>
     </div>
 </template>
 
@@ -115,7 +117,6 @@ export default {
     },
     data() {
         return {
-            isCollapsed: true,
         };
     },
     computed: {
@@ -147,46 +148,7 @@ export default {
             // this.$refs.heartbeatBar.resize();
         }
     },
-    beforeMount() {
-
-        // Always unfold if monitor is accessed directly
-        if (this.monitor.childrenIDs.includes(parseInt(this.$route.params.id))) {
-            this.isCollapsed = false;
-            return;
-        }
-
-        // Set collapsed value based on local storage
-        let storage = window.localStorage.getItem("monitorCollapsed");
-        if (storage === null) {
-            return;
-        }
-
-        let storageObject = JSON.parse(storage);
-        if (storageObject[`monitor_${this.monitor.id}`] == null) {
-            return;
-        }
-
-        this.isCollapsed = storageObject[`monitor_${this.monitor.id}`];
-    },
     methods: {
-        /**
-         * Changes the collapsed value of the current monitor and saves
-         * it to local storage
-         * @returns {void}
-         */
-        changeCollapsed() {
-            this.isCollapsed = !this.isCollapsed;
-
-            // Save collapsed value into local storage
-            let storage = window.localStorage.getItem("monitorCollapsed");
-            let storageObject = {};
-            if (storage !== null) {
-                storageObject = JSON.parse(storage);
-            }
-            storageObject[`monitor_${this.monitor.id}`] = this.isCollapsed;
-
-            window.localStorage.setItem("monitorCollapsed", JSON.stringify(storageObject));
-        },
         /**
          * Get URL of monitor
          * @param {number} id ID of monitor
@@ -217,24 +179,12 @@ export default {
     padding: 0 1px !important;
 }
 
-.collapse-padding {
-    padding: 0 1px !important;
-}
-
 .tags {
     margin: 0;
     padding-left: 20px;
     display: flex;
     flex-wrap: wrap;
     gap: 1px;
-}
-
-.collapsed {
-    transform: rotate(-90deg);
-}
-
-.animated {
-    transition: all 0.15s $easing-in;
 }
 
 .select-input-wrapper {
@@ -247,15 +197,13 @@ export default {
 
 .compact-item {
     display: block;
-    padding: 1px 2px;
+    // padding: 1px 1px;
     text-decoration: none;
     color: inherit;
-    //border-radius: 1px;
     margin: 0;
     
     &:hover {
         background-color: rgba(0, 0, 0, 0.03);
-        outline: 1px rgb(26, 41, 20);  /* Debug outline */
     }
 
     &.disabled {
@@ -266,16 +214,15 @@ export default {
 .info {
     display: flex;
     align-items: center;
-    font-size: 0.9rem;
-    gap: 10px;
+    font-size: 1rem;
+    gap: 0;
     padding: 0;
     margin: 0;
 }
 
 .monitor-name {
-    //outline: 1px dashed purple;  /* Debug outline */
     margin: 0;
-    padding: 0 2px;
+    // padding: 0 2px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -296,50 +243,64 @@ export default {
 }
 
 .item {
-    //outline: 2px solid green;  /* Debug outline */
-    //background: rgba(0, 255, 0, 0.05);  /* Light green background */
     display: flex !important;  // Override block display
     flex-direction: column;
-    //padding: 0 !important;
     margin: 0;
 }
 
 .row {
-    //outline: 1px dashed purple;  /* Debug outline */
-    //background: rgba(128, 0, 128, 0.05);  /* Light purple background */
     --bs-gutter-x: 0;
-    --bs-gutter-y: 0;  //this was the bastard that was causing the issue
-    margin: 0;
-    padding: 0;
+    --bs-gutter-y: 0;  
+    margin: 0 4px 0 0;
+    padding: 0 4px 0 0;
     display: flex;
     align-items: center;
 }
 
 .col-9, .col-md-8, .col-3, .col-md-4 {
-    padding: 0;
-    //width: auto;  // Let content determine width
-    //flex: 0 0 auto;  // Don't grow or shrink
+    padding: 0 4px;
 }
 
 .col-3, .col-md-4 {
     margin-left: auto;  // Push to right
 }
 
-.compact-item {
-    padding: 1px !important;
-    text-decoration: none;
-    color: inherit;
-    margin: 0;
-    //line-height: 1;
-    
-    &:hover {
-        background-color: rgba(0, 0, 0, 0.473);
-        //outline: 1px rgb(26, 41, 20);  /* Debug outline */
-    }
-
-    &.disabled {
-        opacity: 0.6;
-    }
+/* New styling for the uptime pill container */
+.uptime-pill-container {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end; /* Align to the right of its column */
+    padding-right: 5px;
 }
 
+.heartbeat-bar-container {
+    padding-right: 0;
+    align-items: flex-end;
+    justify-content: flex-end;
+    
+}
+
+/* Make the uptime badge more compact if needed */
+.compact-uptime :deep(.badge) {
+    min-width: 50px;  /* Reduce minimum width */
+    padding: 0.2em 0.35em;
+    font-size: 0.7em;
+}
+
+.debug-grid {
+    .row {
+        background-color: rgba(255, 0, 0, 0.1);  /* Light red */
+        border: 1px dashed red;
+    }
+
+    .col-9, .col-md-8, .col-6, .col-md-4, .col-1, .col-md-1 {
+        background-color: rgba(0, 0, 255, 0.1);  /* Light blue */
+        border: 1px solid blue;
+    }
+
+    .uptime-pill-container {
+        background-color: rgba(0, 255, 0, 0.1);  /* Light green */
+        border: 1px solid green;
+    }
+}
 </style>

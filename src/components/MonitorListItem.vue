@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div :style="depthMargin" class="">
+        <div :style="depthMargin">
             <!-- Checkbox -->
             <div v-if="isSelectMode" class="select-input-wrapper">
                 <input
@@ -16,23 +16,22 @@
                 <div class="row g-1">
                     <div class="col-8 col-md-7 small-padding" :class="{ 'monitor-item': $root.userHeartbeatBar == 'bottom' || $root.userHeartbeatBar == 'none' }">
                         <div class="info">
+                            
+                            <span v-if="hasChildren" class="collapse-padding" @click.prevent="changeCollapsed">
+                                <font-awesome-icon icon="chevron-down" class="animated" :class="{ collapsed: isCollapsed}" size="sm" />
+                            </span>
                             <span class="monitor-name">{{ monitor.name }}</span>
                         </div>
                         <div v-if="monitor.tags.length > 0" class="tags">
                             <Tag v-for="tag in monitor.tags" :key="tag" :item="tag" :size="'sm'" class="compact-tag" />
                         </div>
                     </div>
-                    <!-- Only show heartbeat and uptime for child items -->
-                    <template v-if="depth > 0">
-                        <!-- Reduce heartbeat bar column width -->
-                        <div v-show="$root.userHeartbeatBar == 'normal'" :key="$root.userHeartbeatBar" class="col-3 col-md-4">
-                            <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="monitor.id" />
-                        </div>
-                        <!-- Add specific column size for uptime pill -->
-                        <div class="col-1 uptime-pill-container">
-                            <Uptime :monitor="monitor" type="24" :pill="true" class="compact-uptime" />
-                        </div>
-                    </template>
+                    <div v-show="$root.userHeartbeatBar == 'normal'" :key="$root.userHeartbeatBar" class="col-3 col-md-4 pe-3">
+                        <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="monitor.id" />
+                    </div>
+                    <div class="col-1 col-md-1uptime-pill-container">
+                        <Uptime :monitor="monitor" type="24" :pill="true" class="compact-uptime" />
+                    </div>
                 </div>
 
                 <div v-if="$root.userHeartbeatBar == 'bottom'" class="row g-1">
@@ -43,20 +42,22 @@
             </router-link>
         </div>
 
-        <div class="childs">
-            <MonitorListItem
-                v-for="(item, index) in sortedChildMonitorList"
-                :key="index"
-                :monitor="item"
-                :isSelectMode="isSelectMode"
-                :isSelected="isSelected"
-                :select="select"
-                :deselect="deselect"
-                :depth="depth + 1"
-                :filter-func="filterFunc"
-                :sort-func="sortFunc"
-            />
-        </div>
+        <transition name="slide-fade-up">
+            <div v-if="!isCollapsed" class="childs">
+                <MonitorListItem
+                    v-for="(item, index) in sortedChildMonitorList"
+                    :key="index"
+                    :monitor="item"
+                    :isSelectMode="isSelectMode"
+                    :isSelected="isSelected"
+                    :select="select"
+                    :deselect="deselect"
+                    :depth="depth + 1"
+                    :filter-func="filterFunc"
+                    :sort-func="sortFunc"
+                />
+            </div>
+        </transition>
     </div>
 </template>
 

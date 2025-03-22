@@ -6,7 +6,8 @@
                     {{ $t("Select") }}
                 </button>
 
-                <div class="placeholder"></div>
+                <MonitorListFilter :filterState="filterState" @update-filter="updateFilter" />
+
                 <div class="search-wrapper">
                     <a v-if="searchText == ''" class="search-icon">
                         <font-awesome-icon icon="search" size="sm" />
@@ -24,9 +25,6 @@
                         />
                     </form>
                 </div>
-            </div>
-            <div class="header-filter px-2">
-                <MonitorListFilter :filterState="filterState" @update-filter="updateFilter" />
             </div>
 
             <!-- Selection Controls -->
@@ -153,7 +151,7 @@ export default {
         },
 
         monitorListStyle() {
-            let listHeaderHeight = 107;
+            let listHeaderHeight = 65;
 
             if (this.selectMode) {
                 listHeaderHeight += 42;
@@ -421,25 +419,19 @@ export default {
     }
 }
 
-.header-top, .header-filter {
+.header-top {
     padding: 2px;  // Minimal padding
     margin: 0;
-}
-
-.header-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.header-filter {
-    display: flex;
-    align-items: center;
+    gap: 8px;
 }
 
 .search-wrapper {
     display: flex;
     align-items: center;
+    margin-left: auto; /* Push the search to the right */
 }
 
 .search-icon {
@@ -465,7 +457,7 @@ export default {
 .monitor-list {
     display: flex;
     flex-direction: column;
-    padding: 0 !important;
+    padding: 0 0 0 4px !important;
     margin: 0;
     > * {
         margin-bottom: 1px;

@@ -198,7 +198,7 @@ export default {
     label {
         width: 200px;
         line-height: 55px;
-        font-size: 16px;
+        font-size: 14px;
         font-weight: bold;
     }
 }

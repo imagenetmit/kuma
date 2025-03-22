@@ -44,7 +44,7 @@ export default {
     display: inline-block;
     font-size: 14px;
     background-color: rgba(255, 255, 255, 0.5);
-    border-radius: 20px;
+    border-radius: 5px;
     padding: 0 10px;
     margin-right: 5px;
 

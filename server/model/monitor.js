@@ -155,6 +155,10 @@ class Monitor extends BeanModel {
             snmpVersion: this.snmpVersion,
             rabbitmqNodes: JSON.parse(this.rabbitmqNodes),
             conditions: JSON.parse(this.conditions),
+            clientId: this.client_id,
+            locationId: this.location_id,
+            client: preloadData.clients?.get(this.client_id) || null,
+            location: preloadData.locations?.get(this.location_id) || null,
         };
 
         if (includeSensitiveData) {
@@ -1326,8 +1330,11 @@ class Monitor extends BeanModel {
             for (let notification of notificationList) {
                 try {
                     const heartbeatJSON = bean.toJSON();
-                    const monitorData = [{ id: monitor.id,
-                        active: monitor.active
+                    const monitorData = [{ 
+                        id: monitor.id,
+                        active: monitor.active,
+                        client_id: monitor.client_id,
+                        location_id: monitor.location_id
                     }];
                     const preloadData = await Monitor.preparePreloadData(monitorData);
                     // Prevent if the msg is undefined, notifications such as Discord cannot send out.
@@ -1543,6 +1550,8 @@ class Monitor extends BeanModel {
         const activeStatusMap = new Map();
         const forceInactiveMap = new Map();
         const pathsMap = new Map();
+        const clientsMap = new Map();
+        const locationsMap = new Map();
 
         if (monitorData.length > 0) {
             const monitorIDs = monitorData.map(monitor => monitor.id);
@@ -1553,6 +1562,34 @@ class Monitor extends BeanModel {
             const activeStatuses = await Promise.all(monitorData.map(monitor => Monitor.isActive(monitor.id, monitor.active)));
             const forceInactiveStatuses = await Promise.all(monitorData.map(monitor => Monitor.isParentActive(monitor.id)));
             const paths = await Promise.all(monitorData.map(monitor => Monitor.getAllPath(monitor.id, monitor.name)));
+            
+            // Get client and location data
+            const clientIds = [...new Set(monitorData.filter(m => m.client_id).map(m => m.client_id))];
+            const locationIds = [...new Set(monitorData.filter(m => m.location_id).map(m => m.location_id))];
+            
+            if (clientIds.length > 0) {
+                const clients = await R.findAll("clients", "AND id IN (" + clientIds.join(",") + ")");
+                clients.forEach(client => {
+                    clientsMap.set(client.id, {
+                        id: client.id,
+                        name: client.name,
+                        description: client.description
+                    });
+                });
+            }
+            
+            if (locationIds.length > 0) {
+                const locations = await R.findAll("client_location", "AND id IN (" + locationIds.join(",") + ")");
+                locations.forEach(location => {
+                    locationsMap.set(location.id, {
+                        id: location.id,
+                        name: location.name,
+                        description: location.description,
+                        address: location.address,
+                        clientId: location.client_id
+                    });
+                });
+            }
 
             notifications.forEach(row => {
                 if (!notificationsMap.has(row.monitor_id)) {
@@ -1603,6 +1640,8 @@ class Monitor extends BeanModel {
             activeStatus: activeStatusMap,
             forceInactive: forceInactiveMap,
             paths: pathsMap,
+            clients: clientsMap,
+            locations: locationsMap,
         };
     }
 
@@ -1736,6 +1775,50 @@ class Monitor extends BeanModel {
             log.debug("monitor", `[${this.name}] call checkCertExpiryNotifications`);
             await this.checkCertExpiryNotifications(tlsInfo);
         }
+    }
+
+    /**
+     * Get client information for this monitor
+     * @returns {Promise<object|null>} Client info or null if not assigned
+     */
+    async getClient() {
+        if (!this.client_id) {
+            return null;
+        }
+        
+        const client = await R.findOne("client", "id = ? ", [this.client_id]);
+        if (!client) {
+            return null;
+        }
+        
+        return {
+            id: client.id,
+            name: client.name,
+            description: client.description,
+        };
+    }
+
+    /**
+     * Get location information for this monitor
+     * @returns {Promise<object|null>} Location info or null if not assigned
+     */
+    async getLocation() {
+        if (!this.location_id) {
+            return null;
+        }
+        
+        const location = await R.findOne("client_location", "id = ? ", [this.location_id]);
+        if (!location) {
+            return null;
+        }
+        
+        return {
+            id: location.id,
+            name: location.name,
+            description: location.description,
+            address: location.address,
+            clientId: location.client_id,
+        };
     }
 }
 

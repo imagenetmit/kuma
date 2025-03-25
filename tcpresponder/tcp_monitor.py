@@ -40,20 +40,7 @@ class TCPMonitor:
     async def handle_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         peer_name = writer.get_extra_info('peername')
         client_ip = peer_name[0] if peer_name else 'Unknown'
-        # if not self.db_manager.is_ip_allowed(client_ip):
-        #     logging.warning(f"Rejected connection from unauthorized IP: {client_ip}")
-        #     writer.close()
-        #     await writer.wait_closed()
-        #     return
-
-        # device = ninja.search_devices(query=client_ip, expand="organization,location")
         
-        
-
-        # logging.info(f"Accepted connection from: {client_ip}")
-        
-        # # Send webhook notification
-        # await self.send_webhook(client_ip)
         try:
             device = ninja.search_devices(query=client_ip, page_size=1, expand="organization,location")
             location = device['devices'][0]['references']['location']['name']
@@ -68,7 +55,7 @@ class TCPMonitor:
             logging.error(f"Unhandled exception in handle_connection: {str(e)}")
         finally:
             try:
-                writer.close()
+                await writer.close()
                 await writer.wait_closed()
             except Exception as e:
                 logging.error(f"Error closing connection: {str(e)}")
@@ -83,13 +70,16 @@ class TCPMonitor:
         
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(webhook_url) as response:
-                    if response.status != 200:
-                        logging.error(f"Webhook failed with status {response.status}")
-                    else:
-                        logging.info("Webhook sent successfully")
+                try:
+                    async with session.get(webhook_url) as response:
+                        if response.status != 200:
+                            logging.error(f"Webhook failed with status {response.status}")
+                        else:
+                            logging.info("Webhook sent successfully")
+                except Exception as e:
+                    logging.error(f"Error in request: {str(e)}")
         except Exception as e:
-            logging.error(f"Error sending webhook: {str(e)}")
+            logging.error(f"Error creating session: {str(e)}")
 
     async def start_server(self):
         server = await asyncio.start_server(

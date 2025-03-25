@@ -61,8 +61,8 @@ export default {
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .v-chip {
     min-width: 52px;
 }
-</style>
+</style> 

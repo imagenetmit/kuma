@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import EmptyLayout from "./layouts/EmptyLayout.vue";
 import Layout from "./layouts/Layout.vue";
+import VuetifyLayout from "./layouts/VuetifyLayout.vue";
 import Dashboard from "./pages/Dashboard.vue";
 import DashboardHome from "./pages/DashboardHome.vue";
 import Details from "./pages/Details.vue";
@@ -20,6 +21,9 @@ import MaintenanceDetails from "./pages/MaintenanceDetails.vue";
 import ManageMaintenance from "./pages/ManageMaintenance.vue";
 import APIKeys from "./components/settings/APIKeys.vue";
 import SetupDatabase from "./pages/SetupDatabase.vue";
+
+// Vuetify test components
+import VuetifyDashboard from "./vuetify-test/pages/Dashboard.vue";
 
 // Settings - Sub Pages
 import Appearance from "./components/settings/Appearance.vue";
@@ -185,6 +189,16 @@ const routes = [
     {
         path: "/status/:slug",
         component: StatusPage,
+    },
+    {
+        path: "/app",
+        component: VuetifyLayout,
+        children: [
+            {
+                path: "",
+                component: VuetifyDashboard,
+            }
+        ]
     },
     {
         path: "/:pathMatch(.*)*",

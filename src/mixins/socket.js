@@ -63,11 +63,19 @@ export default {
             },
             faviconUpdateDebounce: null,
             emitter: mitt(),
+            isLoadingData: false,
         };
     },
 
     created() {
         this.initSocketIO();
+    },
+
+    mounted() {
+        // Add socket listeners for data loading completion
+        socket.on("monitorList", () => {
+            this.isLoadingData = false;
+        });
     },
 
     methods: {
@@ -408,13 +416,9 @@ export default {
                     this.storage().token = res.token;
                     this.socket.token = res.token;
                     this.loggedIn = true;
-                    this.username = this.getJWTPayload()?.username;
-
-                    // Trigger Chrome Save Password
-                    history.pushState({}, "");
+                    this.isLoadingData = true;  // Add loading state
+                    callback(res);
                 }
-
-                callback(res);
             });
         },
 

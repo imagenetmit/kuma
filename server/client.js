@@ -9,6 +9,7 @@ const io = server.io;
 const { setting } = require("./util-server");
 const checkVersion = require("./check-version");
 const Database = require("./database");
+const { log } = require("../src/util");
 
 /**
  * Send list of notification providers to client
@@ -46,22 +47,28 @@ async function sendNotificationList(socket) {
  * @returns {Promise<void>}
  */
 async function sendHeartbeatList(socket, monitorID, toUser = false, overwrite = false) {
+    const timeLogger = new TimeLogger();
+    log.info("db", `[Monitor: ${monitorID}] Starting heartbeat query...`);
+    
     let list = await R.getAll(`
         SELECT * FROM heartbeat
         WHERE monitor_id = ?
         ORDER BY time DESC
-        LIMIT 100
+        LIMIT 48
     `, [
         monitorID,
     ]);
 
     let result = list.reverse();
-
+    log.info("db", `[Monitor: ${monitorID}] Heartbeat query completed: ${result.length} records`);
+    
     if (toUser) {
         io.to(socket.userID).emit("heartbeatList", monitorID, result, overwrite);
     } else {
         socket.emit("heartbeatList", monitorID, result, overwrite);
     }
+
+    timeLogger.print(`[Monitor: ${monitorID}] sendHeartbeatList total time`);
 }
 
 /**
@@ -74,6 +81,7 @@ async function sendHeartbeatList(socket, monitorID, toUser = false, overwrite = 
  */
 async function sendImportantHeartbeatList(socket, monitorID, toUser = false, overwrite = false) {
     const timeLogger = new TimeLogger();
+    log.info("db", `[Monitor: ${monitorID}] Starting important heartbeat query...`);
 
     let list = await R.find("heartbeat", `
         monitor_id = ?
@@ -84,7 +92,7 @@ async function sendImportantHeartbeatList(socket, monitorID, toUser = false, ove
         monitorID,
     ]);
 
-    timeLogger.print(`[Monitor: ${monitorID}] sendImportantHeartbeatList`);
+    log.info("db", `[Monitor: ${monitorID}] Important heartbeat query completed: ${list.length} records`);
 
     if (toUser) {
         io.to(socket.userID).emit("importantHeartbeatList", monitorID, list, overwrite);
@@ -92,6 +100,7 @@ async function sendImportantHeartbeatList(socket, monitorID, toUser = false, ove
         socket.emit("importantHeartbeatList", monitorID, list, overwrite);
     }
 
+    timeLogger.print(`[Monitor: ${monitorID}] sendImportantHeartbeatList total time`);
 }
 
 /**

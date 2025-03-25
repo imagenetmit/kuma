@@ -14,19 +14,21 @@
 
             <router-link :to="monitorURL(monitor.id)" class="item compact-item" :class="{ 'disabled': ! monitor.active }">
                 <div class="row g-1">
-                    <div class="col-8 col-md-7 small-padding" :class="{ 'monitor-item': $root.userHeartbeatBar == 'bottom' || $root.userHeartbeatBar == 'none' }">
+                    <div class="col-8 col-md-8 small-padding" :class="{ 'monitor-item': $root.userHeartbeatBar == 'bottom' || $root.userHeartbeatBar == 'none' }">
                         <div class="info">
-                            
                             <span v-if="hasChildren" class="collapse-padding" @click.prevent="changeCollapsed">
                                 <font-awesome-icon icon="chevron-down" class="animated" :class="{ collapsed: isCollapsed}" size="sm" />
                             </span>
                             <span class="monitor-name">{{ monitor.name }}</span>
+                            <span v-if="monitor.client" class="client-info" :title="'Client: ' + monitor.client.name">• {{ monitor.client.name }}</span>
+                            <span v-if="monitor.location" class="location-info" :title="'Location: ' + monitor.location.name">• {{ monitor.location.name }}</span>
+                            <span v-if="monitor.type" class="type-info" :title="'Type: ' + monitor.type">• {{ monitor.type }}</span>
                         </div>
                         <div v-if="monitor.tags.length > 0" class="tags">
                             <Tag v-for="tag in monitor.tags" :key="tag" :item="tag" :size="'sm'" class="compact-tag" />
                         </div>
                     </div>
-                    <div v-show="$root.userHeartbeatBar == 'normal'" :key="$root.userHeartbeatBar" class="col-3 col-md-4 pe-3">
+                    <div v-show="$root.userHeartbeatBar == 'normal'" :key="$root.userHeartbeatBar" class="col-3 col-md-3 pe-3">
                         <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="monitor.id" />
                     </div>
                     <div class="col-1 col-md-1uptime-pill-container">
@@ -118,6 +120,7 @@ export default {
     },
     data() {
         return {
+            isCollapsed: false,
         };
     },
     computed: {
@@ -219,14 +222,17 @@ export default {
     gap: 0;
     padding: 0;
     margin: 0;
+    width: 100%;
+    overflow: hidden;
 }
 
 .monitor-name {
     margin: 0;
-    // padding: 0 2px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+    min-width: 0; /* Allows flex item to shrink below its content size */
 }
 
 .compact-uptime {
@@ -302,6 +308,25 @@ export default {
     .uptime-pill-container {
         background-color: rgba(0, 255, 0, 0.1);  /* Light green */
         border: 1px solid green;
+    }
+}
+
+.client-info, .location-info, .type-info {
+    font-size: 0.8rem;
+    color: #666;
+    margin-left: 4px;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 120px; /* Fixed width for both client and location */
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.dark {
+    .client-info, .location-info {
+        color: #999;
     }
 }
 </style>

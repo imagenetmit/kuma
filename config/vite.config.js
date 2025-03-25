@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import visualizer from "rollup-plugin-visualizer";
 import viteCompression from "vite-plugin-compression";
 import VueDevTools from "vite-plugin-vue-devtools";
+import { resolve } from 'path';
 
 const postCssScss = require("postcss-scss");
 const postcssRTLCSS = require("postcss-rtlcss");
@@ -13,6 +14,13 @@ const viteCompressionFilter = /\.(js|mjs|json|css|html|svg)$/i;
 export default defineConfig({
     server: {
         port: 3000,
+        proxy: {
+            '/socket.io': {
+                target: 'http://localhost:3000',
+                ws: true,
+                changeOrigin: true,
+            },
+        },
     },
     define: {
         "FRONTEND_VERSION": JSON.stringify(process.env.npm_package_version),
@@ -45,9 +53,20 @@ export default defineConfig({
             include: [ /.js$/ ],
         },
         rollupOptions: {
+            input: {
+                main: resolve(__dirname, '../index.html'),
+                vuetifyTest: resolve(__dirname, '../src/vuetify-test/index.html'),
+            },
             output: {
-                manualChunks(id, { getModuleInfo, getModuleIds }) {
-
+                manualChunks(id) {
+                    // Put Vuetify and its dependencies in a separate chunk
+                    if (id.includes('vuetify') || id.includes('@mdi/font')) {
+                        return 'vendor-vuetify';
+                    }
+                    // Put Vue and Vue Router in a separate chunk
+                    if (id.includes('vue')) {
+                        return 'vendor-vue';
+                    }
                 }
             }
         },

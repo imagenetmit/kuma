@@ -102,6 +102,28 @@
                                 </i18n-t>
                             </div>
 
+                            <!-- Client -->
+                            <div class="my-3">
+                                <label for="client" class="form-label">{{ $t("Client") }}</label>
+                                <select id="client" v-model="monitor.clientId" class="form-select">
+                                    <option :value="null">{{ $t("None") }}</option>
+                                    <option v-for="client in clientList" :key="client.id" :value="client.id">
+                                        {{ client.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Location -->
+                            <div class="my-3">
+                                <label for="location" class="form-label">{{ $t("Location") }}</label>
+                                <select id="location" v-model="monitor.locationId" class="form-select" :disabled="!monitor.clientId">
+                                    <option :value="null">{{ $t("None") }}</option>
+                                    <option v-for="location in filteredLocationList" :key="location.id" :value="location.id">
+                                        {{ location.name }}
+                                    </option>
+                                </select>
+                            </div>
+
                             <div v-if="monitor.type === 'tailscale-ping'" class="alert alert-warning" role="alert">
                                 {{ $t("tailscalePingWarning") }}
                             </div>
@@ -1111,7 +1133,9 @@ const monitorDefaults = {
     rabbitmqNodes: [],
     rabbitmqUsername: "",
     rabbitmqPassword: "",
-    conditions: []
+    conditions: [],
+    clientId: null,
+    locationId: null
 };
 
 export default {
@@ -1144,6 +1168,8 @@ export default {
             ipOrHostnameRegexPattern: hostNameRegexPattern(),
             mqttIpOrHostnameRegexPattern: hostNameRegexPattern(true),
             gameList: null,
+            clientList: [],
+            locationList: [],
             connectionStringTemplates: {
                 "sqlserver": "Server=<hostname>,<port>;Database=<your database>;User Id=<your user id>;Password=<your password>;Encrypt=<true/false>;TrustServerCertificate=<Yes/No>;Connection Timeout=<int>",
                 "postgres": "postgres://username:password@host:port/database",
@@ -1158,12 +1184,18 @@ export default {
 
     computed: {
         ipRegex() {
-
             // Allow to test with simple dns server with port (127.0.0.1:5300)
             if (! isDev) {
                 return this.ipRegexPattern;
             }
             return null;
+        },
+
+        filteredLocationList() {
+            if (!this.monitor.clientId) {
+                return [];
+            }
+            return this.locationList.filter(location => location.clientId === this.monitor.clientId);
         },
 
         pageName() {
@@ -1554,6 +1586,23 @@ message HealthCheckResponse {
         this.acceptedStatusCodeOptions = acceptedStatusCodeOptions;
         this.dnsresolvetypeOptions = dnsresolvetypeOptions;
         this.kafkaSaslMechanismOptions = kafkaSaslMechanismOptions;
+
+        // Initialize client and location lists
+        this.$root.getSocket().emit("getClients", (res) => {
+            if (res.ok) {
+                this.clientList = res.clients;
+            } else {
+                this.$root.toastError(res.msg);
+            }
+        });
+
+        this.$root.getSocket().emit("getLocations", (res) => {
+            if (res.ok) {
+                this.locationList = res.locations;
+            } else {
+                this.$root.toastError(res.msg);
+            }
+        });
     },
     methods: {
         /**
@@ -1562,9 +1611,10 @@ message HealthCheckResponse {
          */
         init() {
             if (this.isAdd) {
-
                 this.monitor = {
-                    ...monitorDefaults
+                    ...monitorDefaults,
+                    clientId: null,
+                    locationId: null
                 };
 
                 if (this.$root.proxyList && !this.monitor.proxyId) {
@@ -1583,7 +1633,6 @@ message HealthCheckResponse {
             } else if (this.isEdit || this.isClone) {
                 this.$root.getSocket().emit("getMonitor", this.$route.params.id, (res) => {
                     if (res.ok) {
-
                         if (this.isClone) {
                             // Reset push token for cloned monitors
                             if (res.monitor.type === "push") {
@@ -1636,7 +1685,6 @@ message HealthCheckResponse {
             }
 
             this.draftGroupName = null;
-
         },
 
         addKafkaProducerBroker(newBroker) {

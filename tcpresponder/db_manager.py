@@ -1,9 +1,12 @@
-from typing import List, Tuple
+from typing import List, Dict, Any
 from dataclasses import dataclass
 import os
 from dotenv import load_dotenv
-import pymysql
-from pymysql.cursors import DictCursor
+import mariadb
+import pandas as pd
+from ninjapy.client import NinjaRMMClient
+from sqlalchemy import create_engine
+from sqlalchemy.pool import QueuePool
 
 load_dotenv()
 
@@ -14,34 +17,55 @@ UPTIME_KUMA_DB_NAME = os.getenv("UPTIME_KUMA_DB_NAME")
 UPTIME_KUMA_DB_USERNAME = os.getenv("UPTIME_KUMA_DB_USERNAME")
 UPTIME_KUMA_DB_PASSWORD = os.getenv("UPTIME_KUMA_DB_PASSWORD")
 
+# Centralized database configuration
+DB_CONFIG = {
+    'host': UPTIME_KUMA_DB_HOSTNAME,
+    'port': int(UPTIME_KUMA_DB_PORT or "3306"),
+    'user': UPTIME_KUMA_DB_USERNAME,
+    'password': UPTIME_KUMA_DB_PASSWORD,
+    'database': UPTIME_KUMA_DB_NAME,
+    'pool_name': "mariadb-pool",
+    'pool_size': 8,
+    'connect_timeout': 60
+}
 
 @dataclass
 class IPConfig:
     ip_address: str
-    device_name: str
-    client_name: str
-    location_name: str
     is_static_ip: bool
-    push_url: str
+    client_name: str = ""  # Default to empty string
+    location_name: str = ""  # Default to empty string
+    device_name: str = ""  # Default to empty string
+    push_url: str = ""  # Default to empty string
 
 class DatabaseManager:
     def __init__(self):
-        # MariaDB connection parameters
-        self.db_config = {
-            'host': UPTIME_KUMA_DB_HOSTNAME,
-            'port': int(UPTIME_KUMA_DB_PORT) if UPTIME_KUMA_DB_PORT else 3306,
-            'user': UPTIME_KUMA_DB_USERNAME,
-            'password': UPTIME_KUMA_DB_PASSWORD,
-            'database': UPTIME_KUMA_DB_NAME,
-            'cursorclass': DictCursor
-        }
+        # Create SQLAlchemy engine for cache sync using MariaDB with connection pooling
+        self.engine = create_engine(
+            f"mysql+mariadb://{DB_CONFIG['user']}:{DB_CONFIG['password']}@"
+            f"{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}",
+            poolclass=QueuePool,
+            pool_size=DB_CONFIG['pool_size'],
+            pool_timeout=DB_CONFIG['connect_timeout']
+        )
         
-        # Initialize the database if needed
         self.init_db()
+        self.ninja = self._init_ninja_client()
+
+    def _init_ninja_client(self) -> NinjaRMMClient:
+        """Initialize NinjaRMM client"""
+        return NinjaRMMClient(
+            client_id=os.getenv("NINJA_CLIENT_ID"),
+            client_secret=os.getenv("NINJA_CLIENT_SECRET"),
+            token_url=os.getenv("NINJA_TOKEN_URL"),
+            scope=os.getenv("NINJA_SCOPE")
+        )
 
     def get_connection(self):
         """Create and return a new database connection"""
-        return pymysql.connect(**self.db_config)
+        conn = mariadb.connect(**DB_CONFIG)
+        conn.autocommit = True  # Enable autocommit for better performance
+        return conn
 
     def init_db(self):
         """Initialize the database if the table doesn't exist"""
@@ -52,11 +76,11 @@ class DatabaseManager:
                     CREATE TABLE IF NOT EXISTS allowed_ips (
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         ip_address VARCHAR(45) UNIQUE NOT NULL,
-                        device_name VARCHAR(255),
+                        device_name VARCHAR(255) DEFAULT '',
                         client_name VARCHAR(255) NOT NULL,
                         location_name VARCHAR(255) NOT NULL,
                         is_static_ip BOOLEAN NOT NULL,
-                        push_url TEXT,
+                        push_url TEXT DEFAULT '',
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
@@ -64,8 +88,38 @@ class DatabaseManager:
         finally:
             conn.close()
 
+    def sync_from_ninja(self) -> List[Dict[str, Any]]:
+        """Sync IPs from NinjaRMM"""
+        try:
+            ninja_data = self.ninja.get_devices_detailed(expand='organization,location')
+            df = pd.json_normalize(ninja_data)
+            
+            # Extract and clean data
+            df = df[['references.organization.name', 'references.location.name', 'publicIP']]
+            df = df.dropna()
+            
+            # Group and count IPs
+            ip_counts = df.groupby(['references.organization.name', 'references.location.name', 'publicIP']).size()
+            ip_counts = ip_counts.reset_index(name='count')
+            ip_counts = ip_counts.sort_values(['references.organization.name', 'count'], ascending=[True, False])
+            
+            # Convert to IPConfig objects and add to database
+            for _, row in ip_counts.iterrows():
+                ip_config = IPConfig(
+                    ip_address=row['publicIP'],
+                    client_name=row['references.organization.name'],
+                    location_name=row['references.location.name'],
+                    is_static_ip=True
+                )
+                self.add_ip(ip_config)
+            
+            return ip_counts.to_dict(orient='records')
+        except Exception as e:
+            print(f"Error syncing from NinjaRMM: {e}")
+            return []
+
     def add_ip(self, ip_config: IPConfig):
-        """Add or update an IP configuration in the database"""
+        """Add or update an IP configuration"""
         conn = self.get_connection()
         try:
             with conn.cursor() as cursor:
@@ -81,11 +135,11 @@ class DatabaseManager:
                     push_url = VALUES(push_url)
                 ''', (
                     ip_config.ip_address,
-                    ip_config.device_name,
+                    ip_config.device_name or "",
                     ip_config.client_name,
                     ip_config.location_name,
                     ip_config.is_static_ip,
-                    ip_config.push_url
+                    ip_config.push_url or ""
                 ))
             conn.commit()
         finally:
@@ -133,7 +187,7 @@ class DatabaseManager:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT push_url FROM allowed_ips WHERE ip_address = %s", (ip_address,))
                 result = cursor.fetchone()
-                return result['push_url'] if result else None
+                return result['push_url'] if result else ""
         finally:
             conn.close()
 

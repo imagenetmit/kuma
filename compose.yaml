@@ -45,30 +45,35 @@ services:
       retries: 3
       start_period: 20s
 
-  # tcp-monitor:
-  #   build: 
-  #     context: ./tcpresponder
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "50000:50000"  # TCP monitor port
-  #     - "8008:8008"    # API port
-  #   volumes:
-  #     - ./tcpresponder/data:/app/data
-  #   restart: unless-stopped
-  #   environment:
-  #     - NINJA_CLIENT_ID=${NINJA_CLIENT_ID}
-  #     - NINJA_CLIENT_SECRET=${NINJA_CLIENT_SECRET}
-  #     - NINJA_TOKEN_URL=${NINJA_TOKEN_URL}
-  #     - NINJA_SCOPE=${NINJA_SCOPE}
-  #     - NINJA_API_BASE_URL=${NINJA_API_BASE_URL}
-  #   networks:
-  #     - nginx
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:8008/ip"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 10s
+  tcp-monitor:
+    build: 
+      context: ./tcpresponder
+      dockerfile: Dockerfile
+    network_mode: "host"  # Use host networking for TCP monitoring
+    volumes:
+      - ./tcpresponder/data:/app/data
+    restart: unless-stopped
+    environment:
+      - NINJA_CLIENT_ID=${NINJA_CLIENT_ID}
+      - NINJA_CLIENT_SECRET=${NINJA_CLIENT_SECRET}
+      - NINJA_TOKEN_URL=${NINJA_TOKEN_URL}
+      - NINJA_SCOPE=${NINJA_SCOPE}
+      - NINJA_API_BASE_URL=${NINJA_API_BASE_URL}
+      # Add Redis and MariaDB connection info
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MYSQL_HOST=${UPTIME_KUMA_DB_HOSTNAME}
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${UPTIME_KUMA_DB_USERNAME}
+      - MYSQL_PASSWORD=${UPTIME_KUMA_DB_PASSWORD}
+      - MYSQL_DATABASE=${UPTIME_KUMA_DB_NAME}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/ip"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   mariadb:
     image: mariadb:latest
     container_name: mariadb
@@ -107,6 +112,31 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: kuma_redis
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - ./data/redis:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - nginx
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
 networks:
   nginx:

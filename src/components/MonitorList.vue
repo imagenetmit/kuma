@@ -114,7 +114,7 @@ export default {
         boxStyle() {
             if (window.innerWidth > 550) {
                 return {
-                    height: `calc(100vh - 160px + ${this.windowTop}px)`,
+                    height: `calc(100vh - 80px + ${this.windowTop}px)`,
                 };
             } else {
                 return {

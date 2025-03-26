@@ -2,8 +2,9 @@
     <v-chip
         :color="color"
         size="small"
-        class="text-center"
+        class="status-chip"
         theme="dark"
+        density="compact"
     >{{ text }}</v-chip>
 </template>
 
@@ -62,7 +63,11 @@ export default {
 </script>
 
 <style scoped>
-.v-chip {
-    min-width: 52px;
+.status-chip {
+    justify-content: center;
+    min-width: 50px;
+    text-align: center;
+    height: 20px !important;
+    padding: 0 8px !important;
 }
 </style>

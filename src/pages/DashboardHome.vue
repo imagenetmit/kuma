@@ -1,45 +1,66 @@
 <template>
     <transition ref="tableContainer" name="slide-fade" appear>
         <div v-if="$route.name === 'DashboardHome'">
-            
-
-            
-            <div class="shadow-box table-shadow-box py-2 px-3" style="overflow-x: hidden;">
-                <table class="table table-borderless table-hover table-sm">
-                    <thead>
-                        <tr>
-                            <th>{{ $t("Name") }}</th>
-                            <th>{{ $t("Status") }}</th>
-                            <th>{{ $t("DateTime") }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template v-for="(beat, index) in displayedRecords" :key="index">
-                            <tr :class="{ 'shadow-box': $root.windowWidth <= 550}">
-                                <td class="name-column"><router-link :to="`/dashboard/${beat.monitorID}`">{{ $root.monitorList[beat.monitorID]?.name }}</router-link></td>
-                                <td><Status :status="beat.status" /></td>
-                                <td><Datetime :value="beat.time" /></td>
+            <div class="shadow-box mb-2">
+                <div class="list-header">
+                    <div class="header-top py-1 px-2">
+                        <table class="table table-borderless table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="client-column">{{ $t("Client") }}</th>
+                                    <th class="location-column">{{ $t("Location") }}</th>
+                                    <th class="status-column">{{ $t("Status") }}</th>
+                                    <th class="datetime-column">{{ $t("DateTime") }}</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="table-shadow-box py-2 px-3" style="overflow-x: hidden;">
+                    <table class="table table-borderless table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th class="client-column"></th>
+                                <th class="location-column"></th>
+                                <th class="status-column"></th>
+                                <th class="datetime-column"></th>
                             </tr>
-                            <tr v-if="beat.msg" class="message-row">
-                                <td colspan="3">{{ beat.msg }}</td>
+                        </thead>
+                        <tbody>
+                            <template v-for="(beat, index) in displayedRecords" :key="index">
+                                <tr :class="{ 'shadow-box': $root.windowWidth <= 550}">
+                                    <td class="client-column">{{ getMonitor(beat.monitorID)?.client?.name || '-' }}</td>
+                                    <td class="location-column">{{ getMonitor(beat.monitorID)?.location?.name || '-' }}</td>
+                                    <td class="status-column"><Status :status="beat.status" /></td>
+                                    <td class="datetime-column"><Datetime :value="beat.time" /></td>
+                                </tr>
+                                <tr v-if="beat.msg" class="message-row">
+                                    <td colspan="4">
+                                        <router-link :to="`/dashboard/${beat.monitorID}`" class="monitor-name">
+                                            {{ getMonitor(beat.monitorID)?.name || '-' }}
+                                        </router-link>
+                                        {{ beat.msg }}
+                                    </td>
+                                </tr>
+                            </template>
+
+                            <tr v-if="importantHeartBeatListLength === 0">
+                                <td colspan="4">
+                                    {{ $t("No important events") }}
+                                </td>
                             </tr>
-                        </template>
+                        </tbody>
+                    </table>
 
-                        <tr v-if="importantHeartBeatListLength === 0">
-                            <td colspan="3">
-                                {{ $t("No important events") }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="d-flex justify-content-center kuma_pagination">
-                    <pagination
-                        v-model="page"
-                        :records="importantHeartBeatListLength"
-                        :per-page="perPage"
-                        :options="paginationConfig"
-                    />
+                    <div class="d-flex justify-content-center kuma_pagination">
+                        <pagination
+                            v-model="page"
+                            :records="importantHeartBeatListLength"
+                            :per-page="perPage"
+                            :options="paginationConfig"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
@@ -75,7 +96,13 @@ export default {
             },
             importantHeartBeatListLength: 0,
             displayedRecords: [],
+            monitorListLoaded: false,
         };
+    },
+    computed: {
+        hasMonitorData() {
+            return this.$root.monitorList && Object.keys(this.$root.monitorList).length > 0;
+        }
     },
     watch: {
         perPage() {
@@ -87,17 +114,25 @@ export default {
         page() {
             this.getImportantHeartbeatListPaged();
         },
+
+        hasMonitorData(newVal) {
+            if (newVal && !this.monitorListLoaded) {
+                this.monitorListLoaded = true;
+                this.getImportantHeartbeatListLength();
+            }
+        }
     },
 
     mounted() {
-        this.getImportantHeartbeatListLength();
-
         this.$root.emitter.on("newImportantHeartbeat", this.onNewImportantHeartbeat);
-
         this.initialPerPage = this.perPage;
-
         window.addEventListener("resize", this.updatePerPage);
         this.updatePerPage();
+
+        // Ensure monitorList is loaded
+        if (!this.hasMonitorData) {
+            this.$root.getMonitorList();
+        }
     },
 
     beforeUnmount() {
@@ -107,6 +142,15 @@ export default {
     },
 
     methods: {
+        /**
+         * Get monitor data by ID
+         * @param {number} monitorID - The ID of the monitor to get
+         * @returns {object|null} The monitor object or null if not found
+         */
+        getMonitor(monitorID) {
+            return this.$root.monitorList?.[monitorID] || null;
+        },
+
         /**
          * Updates the displayed records when a new important heartbeat arrives.
          * @param {object} heartbeat - The heartbeat object received.
@@ -172,28 +216,72 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/vars";
 
-.num {
-    font-size: 24px;
-    line-height: 1.2;
-    color: $primary;
-    font-weight: bold;
-    display: block;
+.shadow-box {
+    height: calc(100vh - 130px);
+    position: sticky;
+    top: 5px;
+    padding: 0 !important;
+    margin: 0;
 }
 
-.shadow-box {
-    padding: 12px;
+.list-header {
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 4px 4px 0 0;
+    margin: 0 0 6px 0;
+    padding: 4px 4px 2px 4px;
+
+    .dark & {
+        background-color: $dark-header-bg;
+        border-bottom: 0;
+    }
+}
+
+.header-top {
+    padding: 2px;
+    margin: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
 }
 
 table {
     font-size: 13px;
+    width: 100%;
+    table-layout: fixed;
 
-    th {
+    th, td {
         padding: 0.3rem;
         font-size: 12px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    td {
-        padding: 0.3rem;
+    th {
+        text-align: left;
+        font-weight: normal;
+        color: inherit;
+    }
+
+    .client-column {
+        width: 45%;
+    }
+
+    .location-column {
+        width: 20%;
+    }
+
+    .status-column {
+        width: 15%;
+    }
+
+    .datetime-column {
+        width: 20%;
+    }
+
+    .datetime-column:not(th) {
+        text-align: left;
     }
 
     tr {
@@ -207,6 +295,17 @@ table {
         
         td {
             padding: 0.3rem 0.3rem 0.3rem 1rem;
+        }
+
+        .monitor-name {
+            color: $primary;
+            text-decoration: none;
+            margin-right: 8px;
+            font-weight: 500;
+
+            &:hover {
+                text-decoration: underline;
+            }
         }
     }
 
@@ -225,6 +324,15 @@ table {
 @media screen and (min-aspect-ratio: 4/3) {
     .name-column {
         min-width: 200px;
+    }
+}
+
+// Adjust for mobile
+@media (max-width: 770px) {
+    .list-header {
+        margin: -12px;
+        margin-bottom: 8px;
+        padding: 4px;
     }
 }
 </style>

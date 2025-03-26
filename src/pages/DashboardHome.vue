@@ -11,19 +11,22 @@
                             <th>{{ $t("Name") }}</th>
                             <th>{{ $t("Status") }}</th>
                             <th>{{ $t("DateTime") }}</th>
-                            <th>{{ $t("Message") }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(beat, index) in displayedRecords" :key="index" :class="{ 'shadow-box': $root.windowWidth <= 550}">
-                            <td class="name-column"><router-link :to="`/dashboard/${beat.monitorID}`">{{ $root.monitorList[beat.monitorID]?.name }}</router-link></td>
-                            <td><Status :status="beat.status" /></td>
-                            <td :class="{ 'border-0':! beat.msg}"><Datetime :value="beat.time" /></td>
-                            <td class="border-0">{{ beat.msg }}</td>
-                        </tr>
+                        <template v-for="(beat, index) in displayedRecords" :key="index">
+                            <tr :class="{ 'shadow-box': $root.windowWidth <= 550}">
+                                <td class="name-column"><router-link :to="`/dashboard/${beat.monitorID}`">{{ $root.monitorList[beat.monitorID]?.name }}</router-link></td>
+                                <td><Status :status="beat.status" /></td>
+                                <td><Datetime :value="beat.time" /></td>
+                            </tr>
+                            <tr v-if="beat.msg" class="message-row">
+                                <td colspan="3">{{ beat.msg }}</td>
+                            </tr>
+                        </template>
 
                         <tr v-if="importantHeartBeatListLength === 0">
-                            <td colspan="4">
+                            <td colspan="3">
                                 {{ $t("No important events") }}
                             </td>
                         </tr>
@@ -195,6 +198,16 @@ table {
 
     tr {
         transition: all ease-in-out 0.2ms;
+    }
+
+    .message-row {
+        background-color: rgba(0, 0, 0, 0.02);
+        font-size: 12px;
+        color: #666;
+        
+        td {
+            padding: 0.3rem 0.3rem 0.3rem 1rem;
+        }
     }
 
     @media (max-width: 550px) {

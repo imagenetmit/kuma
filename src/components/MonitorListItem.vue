@@ -31,7 +31,7 @@
                     <div v-show="$root.userHeartbeatBar == 'normal'" :key="$root.userHeartbeatBar" class="col-3 col-md-3 pe-3">
                         <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="monitor.id" />
                     </div>
-                    <div class="col-1 col-md-1uptime-pill-container">
+                    <div class="col-1 col-md-1 uptime-pill-container">
                         <Uptime :monitor="monitor" type="24" :pill="true" class="compact-uptime" />
                     </div>
                 </div>
@@ -278,6 +278,7 @@ export default {
     align-items: flex-end;
     justify-content: flex-end; /* Align to the right of its column */
     padding-right: 5px;
+    font-size: 0.8rem;
 }
 
 .heartbeat-bar-container {

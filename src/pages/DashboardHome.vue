@@ -124,6 +124,11 @@ export default {
     },
 
     mounted() {
+        // Ensure socket is initialized before using it
+        if (!this.$root.socket.initedSocketIO) {
+            this.$root.initSocketIO();
+        }
+        
         this.$root.emitter.on("newImportantHeartbeat", this.onNewImportantHeartbeat);
         this.initialPerPage = this.perPage;
         window.addEventListener("resize", this.updatePerPage);

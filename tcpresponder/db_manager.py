@@ -42,7 +42,7 @@ class DatabaseManager:
     def __init__(self):
         # Create SQLAlchemy engine for cache sync using MariaDB with connection pooling
         self.engine = create_engine(
-            f"mysql+mariadb://{DB_CONFIG['user']}:{DB_CONFIG['password']}@"
+            f"mysql+pymysql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@"
             f"{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}",
             poolclass=QueuePool,
             pool_size=DB_CONFIG['pool_size'],

@@ -67,6 +67,7 @@
         "reset-migrate-aggregate-table-state": "node extra/reset-migrate-aggregate-table-state.js"
     },
     "dependencies": {
+        "@dotenvx/dotenvx": "^1.39.0",
         "@grpc/grpc-js": "~1.8.22",
         "@louislam/ping": "~0.4.4-mod.1",
         "@louislam/sqlite3": "15.1.6",

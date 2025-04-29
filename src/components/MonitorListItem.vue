@@ -1,66 +1,81 @@
 <template>
-    <div>
-        <div :style="depthMargin">
-            <!-- Checkbox -->
-            <div v-if="isSelectMode" class="select-input-wrapper">
+    <template v-for="(item, index) in [monitor, ...sortedChildMonitorList]" :key="index">
+        <tr :class="{ 'child-row': item !== monitor }" :style="item !== monitor ? depthMargin : {}">
+            <!-- Select Column -->
+            <td v-if="isSelectMode" class="select-column">
                 <input
+                    v-if="item === monitor"
                     class="form-check-input select-input form-check-input-sm"
                     type="checkbox"
                     :aria-label="$t('Check/Uncheck')"
-                    :checked="isSelected(monitor.id)"
+                    :checked="isSelected(item.id)"
                     @click.stop="toggleSelection"
                 />
-            </div>
+            </td>
 
-            <router-link :to="monitorURL(monitor.id)" class="item compact-item" :class="{ 'disabled': ! monitor.active }">
-                <div class="row g-1">
-                    <div class="col-8 col-md-8 small-padding" :class="{ 'monitor-item': $root.userHeartbeatBar == 'bottom' || $root.userHeartbeatBar == 'none' }">
-                        <div class="info">
-                            <span v-if="hasChildren" class="collapse-padding" @click.prevent="changeCollapsed">
-                                <font-awesome-icon icon="chevron-down" class="animated" :class="{ collapsed: isCollapsed}" size="sm" />
-                            </span>
-                            <span class="monitor-name">{{ monitor.name }}</span>
-                            <span v-if="monitor.client" class="client-info" :title="'Client: ' + monitor.client.name">• {{ monitor.client.name }}</span>
-                            <span v-if="monitor.location" class="location-info" :title="'Location: ' + monitor.location.name">• {{ monitor.location.name }}</span>
-                            <span v-if="monitor.type" class="type-info" :title="'Type: ' + monitor.type">• {{ monitor.type }}</span>
-                        </div>
-                        <div v-if="monitor.tags.length > 0" class="tags">
-                            <Tag v-for="tag in monitor.tags" :key="tag" :item="tag" :size="'sm'" class="compact-tag" />
-                        </div>
-                    </div>
-                    <div v-show="$root.userHeartbeatBar == 'normal'" :key="$root.userHeartbeatBar" class="col-3 col-md-3 pe-3">
-                        <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="monitor.id" />
-                    </div>
-                    <div class="col-1 col-md-1 uptime-pill-container">
-                        <Uptime :monitor="monitor" type="24" :pill="true" class="compact-uptime" />
-                    </div>
+            <!-- Name Column -->
+            <td class="name-column">
+                <div class="d-flex align-items-center">
+                    <span v-if="item === monitor && hasChildren" class="collapse-padding me-2" @click.prevent="changeCollapsed">
+                        <font-awesome-icon icon="chevron-down" class="animated" :class="{ collapsed: isCollapsed}" size="sm" />
+                    </span>
+                    <router-link :to="monitorURL(item.id)" class="monitor-name" :class="{ 'disabled': !item.active }">
+                        {{ item.name }}
+                    </router-link>
                 </div>
-
-                <div v-if="$root.userHeartbeatBar == 'bottom'" class="row g-1">
-                    <div class="col-12 bottom-style">
-                        <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="monitor.id" />
-                    </div>
+                <div v-if="item.tags.length > 0" class="tags">
+                    <Tag v-for="tag in item.tags" :key="tag" :item="tag" :size="'sm'" class="compact-tag" />
                 </div>
-            </router-link>
-        </div>
+            </td>
 
-        <transition name="slide-fade-up">
-            <div v-if="!isCollapsed" class="childs">
-                <MonitorListItem
-                    v-for="(item, index) in sortedChildMonitorList"
-                    :key="index"
-                    :monitor="item"
-                    :isSelectMode="isSelectMode"
-                    :isSelected="isSelected"
-                    :select="select"
-                    :deselect="deselect"
-                    :depth="depth + 1"
-                    :filter-func="filterFunc"
-                    :sort-func="sortFunc"
-                />
-            </div>
-        </transition>
-    </div>
+            <!-- Client Column -->
+            <td class="client-column">
+                <span v-if="item.client" class="client-info" :title="'Client: ' + item.client.name">
+                    {{ item.client.name }}
+                </span>
+            </td>
+
+            <!-- Location Column -->
+            <td class="location-column">
+                <span v-if="item.location" class="location-info" :title="'Location: ' + item.location.name">
+                    {{ item.location.name }}
+                </span>
+            </td>
+
+            <!-- Heartbeat Column -->
+            <td v-if="$root.userHeartbeatBar == 'normal'" class="heartbeat-column">
+                <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="item.id" />
+            </td>
+
+            <!-- Uptime Column -->
+            <td class="uptime-column">
+                <Uptime :monitor="item" type="24" :pill="true" class="compact-uptime" />
+            </td>
+        </tr>
+
+        <!-- Bottom Heartbeat Bar Row -->
+        <tr v-if="item === monitor && $root.userHeartbeatBar == 'bottom'" class="bottom-heartbeat-row">
+            <td :colspan="isSelectMode ? 6 : 5">
+                <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="item.id" />
+            </td>
+        </tr>
+    </template>
+
+    <!-- Child Items -->
+    <template v-if="!isCollapsed">
+        <MonitorListItem
+            v-for="(childItem, index) in sortedChildMonitorList"
+            :key="'child-' + index"
+            :monitor="childItem"
+            :isSelectMode="isSelectMode"
+            :isSelected="isSelected"
+            :select="select"
+            :deselect="deselect"
+            :depth="depth + 1"
+            :filter-func="filterFunc"
+            :sort-func="sortFunc"
+        />
+    </template>
 </template>
 
 <script>
@@ -179,6 +194,65 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/vars.scss";
 
+.child-row {
+    background-color: rgba(0, 0, 0, 0.01) !important;
+}
+
+.bottom-heartbeat-row {
+    background-color: rgba(0, 0, 0, 0.01);
+    
+    td {
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+.monitor-name {
+    color: inherit;
+    text-decoration: none;
+    font-weight: 500;
+    
+    &:hover {
+        text-decoration: underline;
+    }
+    
+    &.disabled {
+        opacity: 0.6;
+    }
+}
+
+.tags {
+    margin-top: 0.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.uptime-column {
+    text-align: left;
+}
+
+td.uptime-column {
+    text-align: left;
+    padding-right: 0 !important;
+}
+
+.compact-uptime {
+    display: inline-block;
+}
+
+/* Remove all duplicate and conflicting styles */
+.uptime-wrapper {
+    display: none;
+}
+
+.select-input {
+    margin: 0;
+}
+
+td {
+    padding: 0.5rem !important;
+}
+
 .small-padding {
     padding: 0 1px !important;
 }
@@ -293,6 +367,8 @@ export default {
     min-width: 50px;  /* Reduce minimum width */
     padding: 0.2em 0.35em;
     font-size: 0.7em;
+    background-color: #28a745;  /* Bootstrap's success green */
+    color: white;
 }
 
 .debug-grid {
@@ -328,6 +404,35 @@ export default {
 .dark {
     .client-info, .location-info {
         color: #999;
+    }
+}
+
+.monitor-name {
+    color: inherit;
+    text-decoration: none;
+    
+    &:hover {
+        text-decoration: underline;
+    }
+    
+    &.disabled {
+        opacity: 0.6;
+    }
+}
+
+.tags {
+    margin-top: 0.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.uptime-column {
+    text-align: right;
+    
+    .d-flex {
+        justify-content: flex-end;
+        width: 100%;
     }
 }
 </style>

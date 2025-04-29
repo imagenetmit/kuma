@@ -1,11 +1,14 @@
 <template>
-    <v-chip
-        :color="color"
-        size="small"
-        class="status-chip"
-        theme="dark"
-        density="compact"
-    >{{ text }}</v-chip>
+    <span
+        class="badge status-badge"
+        :class="{
+            'bg-danger': status === 0,
+            'bg-success': status === 1,
+            'bg-warning': status === 2,
+            'bg-secondary': status === 3,
+            'bg-secondary': status === 4
+        }"
+    >{{ text }}</span>
 </template>
 
 <script>
@@ -19,26 +22,6 @@ export default {
     },
 
     computed: {
-        color() {
-            if (this.status === 0) {
-                return "error";
-            }
-
-            if (this.status === 1) {
-                return "success";
-            }
-
-            if (this.status === 2) {
-                return "warning";
-            }
-
-            if (this.status === 3) {
-                return "grey";
-            }
-
-            return "secondary";
-        },
-
         text() {
             if (this.status === 0) {
                 return this.$t("Down");
@@ -63,11 +46,17 @@ export default {
 </script>
 
 <style scoped>
-.status-chip {
+.status-badge {
+    display: inline-flex;
     justify-content: center;
-    min-width: 50px;
-    text-align: center;
-    height: 20px !important;
-    padding: 0 8px !important;
+    align-items: center;
+    min-width: 60px;
+    width: 60px;
+    height: 20px;
+    padding: 0 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 </style>

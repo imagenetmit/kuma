@@ -17,7 +17,7 @@
                     </div>
                 </div>
                 
-                <div class="table-shadow-box py-2 px-3" style="overflow-x: hidden;">
+                <div ref="logContainer" class="table shadow-box py-2 px-3" style="overflow-x: hidden; overflow-y: auto;">
                     <table class="table table-borderless table-hover table-sm">
                         <thead>
                             <tr>
@@ -28,14 +28,14 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <template v-for="(beat, index) in displayedRecords" :key="index">
-                                <tr :class="{ 'shadow-box': $root.windowWidth <= 550}">
-                                    <td class="client-column">{{ getMonitor(beat.monitorID)?.client?.name || '-' }}</td>
-                                    <td class="location-column">{{ getMonitor(beat.monitorID)?.location?.name || '-' }}</td>
-                                    <td class="status-column"><Status :status="beat.status" /></td>
-                                    <td class="datetime-column"><Datetime :value="beat.time" /></td>
+                            <template v-for="(beat, index) in heartbeatRecords" :key="index">
+                                <tr :class="{ 'shadow-box': $root.windowWidth <= 550, 'new-entry': beat.isNew }">
+                                    <td class="client-column px-3">{{ getMonitor(beat.monitorID)?.client?.name || '-' }}</td>
+                                    <td class="location-column px-3">{{ getMonitor(beat.monitorID)?.location?.name || '-' }}</td>
+                                    <td class="status-column px-3"><Status :status="beat.status" /></td>
+                                    <td class="datetime-column px-3"><Datetime :value="beat.time" /></td>
                                 </tr>
-                                <tr v-if="beat.msg" class="message-row">
+                                <tr v-if="beat.msg" class="message-row px-4">
                                     <td colspan="4">
                                         <router-link :to="`/dashboard/${beat.monitorID}`" class="monitor-name">
                                             {{ getMonitor(beat.monitorID)?.name || '-' }}
@@ -45,22 +45,13 @@
                                 </tr>
                             </template>
 
-                            <tr v-if="importantHeartBeatListLength === 0">
+                            <tr v-if="heartbeatRecords.length === 0">
                                 <td colspan="4">
                                     {{ $t("No important events") }}
                                 </td>
                             </tr>
                         </tbody>
                     </table>
-
-                    <div class="d-flex justify-content-center kuma_pagination">
-                        <pagination
-                            v-model="page"
-                            :records="importantHeartBeatListLength"
-                            :per-page="perPage"
-                            :options="paginationConfig"
-                        />
-                    </div>
                 </div>
             </div>
         </div>
@@ -71,13 +62,11 @@
 <script>
 import Status from "../components/Status.vue";
 import Datetime from "../components/Datetime.vue";
-import Pagination from "v-pagination-3";
 
 export default {
     components: {
         Datetime,
         Status,
-        Pagination,
     },
     props: {
         calculatedHeight: {
@@ -87,16 +76,11 @@ export default {
     },
     data() {
         return {
-            page: 1,
-            perPage: 25,
-            initialPerPage: 25,
-            paginationConfig: {
-                hideCount: true,
-                chunksNavigation: "scroll",
-            },
-            importantHeartBeatListLength: 0,
-            displayedRecords: [],
+            maxRecords: 100, // Maximum number of records to display
+            heartbeatRecords: [],
             monitorListLoaded: false,
+            autoScroll: true, // Auto scroll is always on
+            socketInitialized: false,
         };
     },
     computed: {
@@ -105,48 +89,64 @@ export default {
         }
     },
     watch: {
-        perPage() {
-            this.$nextTick(() => {
-                this.getImportantHeartbeatListPaged();
-            });
-        },
-
-        page() {
-            this.getImportantHeartbeatListPaged();
-        },
-
         hasMonitorData(newVal) {
             if (newVal && !this.monitorListLoaded) {
                 this.monitorListLoaded = true;
-                this.getImportantHeartbeatListLength();
+                this.getRecentHeartbeats();
+            }
+        },
+        
+        heartbeatRecords() {
+            this.$nextTick(() => {
+                this.scrollToTop();
+            });
+        },
+
+        // Add route watcher to reload data when returning to dashboard
+        '$route'(to) {
+            if (to.name === 'DashboardHome') {
+                this.getRecentHeartbeats();
             }
         }
     },
 
     mounted() {
-        // Ensure socket is initialized before using it
-        if (!this.$root.socket.initedSocketIO) {
-            this.$root.initSocketIO();
-        }
-        
-        this.$root.emitter.on("newImportantHeartbeat", this.onNewImportantHeartbeat);
-        this.initialPerPage = this.perPage;
-        window.addEventListener("resize", this.updatePerPage);
-        this.updatePerPage();
+        this.initializeComponent();
+    },
 
-        // Ensure monitorList is loaded
-        if (!this.hasMonitorData) {
-            this.$root.getMonitorList();
-        }
+    activated() {
+        this.initializeComponent();
     },
 
     beforeUnmount() {
         this.$root.emitter.off("newImportantHeartbeat", this.onNewImportantHeartbeat);
-
-        window.removeEventListener("resize", this.updatePerPage);
     },
 
     methods: {
+        /**
+         * Initialize the component and set up socket events
+         */
+        initializeComponent() {
+            // Ensure socket is initialized before using it
+            if (!this.$root.socket.initedSocketIO) {
+                this.$root.initSocketIO();
+            }
+            
+            // Only set up socket events once
+            if (!this.socketInitialized) {
+                this.$root.emitter.on("newImportantHeartbeat", this.onNewImportantHeartbeat);
+                this.socketInitialized = true;
+            }
+
+            // Ensure monitorList is loaded
+            if (!this.hasMonitorData) {
+                this.$root.getMonitorList();
+            }
+
+            // Always reload heartbeats when component is mounted or activated
+            this.getRecentHeartbeats();
+        },
+
         /**
          * Get monitor data by ID
          * @param {number} monitorID - The ID of the monitor to get
@@ -157,62 +157,58 @@ export default {
         },
 
         /**
-         * Updates the displayed records when a new important heartbeat arrives.
-         * @param {object} heartbeat - The heartbeat object received.
+         * Adds a new heartbeat to the records and handles record limit
+         * @param {object} heartbeat - The heartbeat object received
          * @returns {void}
          */
         onNewImportantHeartbeat(heartbeat) {
-            if (this.page === 1) {
-                this.displayedRecords.unshift(heartbeat);
-                if (this.displayedRecords.length > this.perPage) {
-                    this.displayedRecords.pop();
+            // Mark the heartbeat as new for highlighting
+            heartbeat.isNew = true;
+            
+            // Add to beginning of array
+            this.heartbeatRecords.unshift(heartbeat);
+            
+            // Remove highlight after a delay
+            setTimeout(() => {
+                const index = this.heartbeatRecords.findIndex(beat => beat === heartbeat);
+                if (index >= 0) {
+                    this.heartbeatRecords[index].isNew = false;
                 }
-                this.importantHeartBeatListLength += 1;
+            }, 3000);
+            
+            // Limit the number of records
+            if (this.heartbeatRecords.length > this.maxRecords) {
+                this.heartbeatRecords = this.heartbeatRecords.slice(0, this.maxRecords);
             }
         },
 
         /**
-         * Retrieves the length of the important heartbeat list for all monitors.
+         * Fetches recent heartbeats to initially populate the dynamic log
          * @returns {void}
          */
-        getImportantHeartbeatListLength() {
-            this.$root.getSocket().emit("monitorImportantHeartbeatListCount", null, (res) => {
+        getRecentHeartbeats() {
+            // Get the most recent heartbeats to populate the log initially
+            this.$root.getSocket().emit("monitorImportantHeartbeatListPaged", null, 0, this.maxRecords, (res) => {
                 if (res.ok) {
-                    this.importantHeartBeatListLength = res.count;
-                    this.getImportantHeartbeatListPaged();
+                    // Backend already returns newest first with ORDER BY time DESC
+                    this.heartbeatRecords = res.data;
+                    
+                    this.$nextTick(() => {
+                        this.scrollToTop();
+                    });
                 }
             });
         },
-
+        
         /**
-         * Retrieves the important heartbeat list for the current page.
+         * Scrolls the log container to the top to show newest entries
          * @returns {void}
          */
-        getImportantHeartbeatListPaged() {
-            const offset = (this.page - 1) * this.perPage;
-            this.$root.getSocket().emit("monitorImportantHeartbeatListPaged", null, offset, this.perPage, (res) => {
-                if (res.ok) {
-                    this.displayedRecords = res.data;
-                }
-            });
-        },
-
-        /**
-         * Updates the number of items shown per page based on the available height.
-         * @returns {void}
-         */
-        updatePerPage() {
-            const tableContainer = this.$refs.tableContainer;
-            const tableContainerHeight = tableContainer.offsetHeight;
-            const availableHeight = window.innerHeight - tableContainerHeight;
-            const additionalPerPage = Math.floor(availableHeight / 58);
-
-            if (additionalPerPage > 0) {
-                this.perPage = Math.max(this.initialPerPage, this.perPage + additionalPerPage);
-            } else {
-                this.perPage = this.initialPerPage;
+        scrollToTop() {
+            const container = this.$refs.logContainer;
+            if (container) {
+                container.scrollTop = 0;
             }
-
         },
     },
 };
@@ -270,7 +266,7 @@ table {
     }
 
     .client-column {
-        width: 45%;
+        width: 40%;
     }
 
     .location-column {
@@ -282,7 +278,7 @@ table {
     }
 
     .datetime-column {
-        width: 20%;
+        width: 25%;
     }
 
     .datetime-column:not(th) {
@@ -291,6 +287,11 @@ table {
 
     tr {
         transition: all ease-in-out 0.2ms;
+        border-style: none;
+    }
+    
+    tr.new-entry {
+        animation: highlight-new 3s ease-out;
     }
 
     .message-row {
@@ -299,7 +300,7 @@ table {
         color: #666;
         
         td {
-            padding: 0.3rem 0.3rem 0.3rem 1rem;
+            padding: 0rem 0rem 0rem 2rem;
         }
 
         .monitor-name {
@@ -317,6 +318,15 @@ table {
     @media (max-width: 550px) {
         table-layout: fixed;
         overflow-wrap: break-word;
+    }
+}
+
+@keyframes highlight-new {
+    0% {
+        background-color: rgba(0, 123, 255, 0.2);
+    }
+    100% {
+        background-color: transparent;
     }
 }
 

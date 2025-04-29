@@ -608,9 +608,10 @@ class Monitor extends BeanModel {
 
                         if (status) {
                             bean.status = UP;
-                            bean.msg = `JSON query passes (comparing ${response} ${this.jsonPathOperator} ${this.expectedValue})`;
+                            // bean.msg = `JSON query passes (comparing ${response} ${this.jsonPathOperator} ${this.expectedValue})`;
+                            bean.msg = `API check PASS: ${response} (expected: ${this.expectedValue})`;
                         } else {
-                            throw new Error(`JSON query does not pass (comparing ${response} ${this.jsonPathOperator} ${this.expectedValue})`);
+                            throw new Error(`API check FAIL: ${response} (expected: ${this.expectedValue}`);
                         }
 
                     }

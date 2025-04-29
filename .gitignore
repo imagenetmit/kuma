@@ -9,7 +9,7 @@ db
 !/data/.gitkeep
 /data*
 .vscode
-
+/tcpresponder/.env
 /private
 /out
 /tmp
@@ -30,3 +30,4 @@ extra/exe-builder/obj
 .vs
 .vscode
 *.log
+tcpresponder/devices_df.csv

@@ -71,12 +71,12 @@ export default {
         this.initSocketIO();
     },
 
-    mounted() {
-        // Add socket listeners for data loading completion
-        socket.on("monitorList", () => {
-            this.isLoadingData = false;
-        });
-    },
+    // mounted() {
+    //     // Add socket listeners for data loading completion
+    //     socket.on("monitorList", () => {
+    //         this.isLoadingData = false;
+    //     });
+    // },
 
     methods: {
 

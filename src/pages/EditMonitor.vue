@@ -107,7 +107,7 @@
                                 <label for="client" class="form-label">{{ $t("Client") }}</label>
                                 <select id="client" v-model="monitor.clientId" class="form-select">
                                     <option :value="null">{{ $t("None") }}</option>
-                                    <option v-for="client in clientList" :key="client.id" :value="client.id">
+                                    <option v-for="client in sortedClientList" :key="client.id" :value="client.id">
                                         {{ client.name }}
                                     </option>
                                 </select>
@@ -1189,6 +1189,10 @@ export default {
                 return this.ipRegexPattern;
             }
             return null;
+        },
+
+        sortedClientList() {
+            return [...this.clientList].sort((a, b) => a.name.localeCompare(b.name));
         },
 
         filteredLocationList() {

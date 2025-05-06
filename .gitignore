@@ -25,3 +25,10 @@ extra/exe-builder/obj
 
 .vs
 .vscode
+.csv
+.json
+.db
+.ipynb
+.log
+__pycache__/
+tcpresponder/*

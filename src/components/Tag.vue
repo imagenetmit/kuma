@@ -43,7 +43,7 @@ export default {
          */
         size: {
             type: String,
-            default: "normal",
+            default: "small",
         }
     },
     computed: {

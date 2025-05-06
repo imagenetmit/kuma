@@ -21,6 +21,10 @@ import timezone from "./modules/dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { loadToastSettings } from "./util-frontend";
+
+// Import Vuetify
+import vuetify from './plugins/vuetify';
+
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(relativeTime);
@@ -44,6 +48,7 @@ const app = createApp({
 
 app.use(router);
 app.use(i18n);
+app.use(vuetify);
 
 app.use(Toast, loadToastSettings());
 app.component("Editable", contenteditable);

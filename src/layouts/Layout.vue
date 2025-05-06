@@ -345,7 +345,7 @@ main {
         padding-left: 0;
         padding-bottom: 0;
         margin-top: 8px !important;
-        border-radius: 16px;
+        border-radius: 5px;
         overflow: hidden;
 
         .dropdown-divider {
@@ -468,13 +468,13 @@ main {
     }
 
     .stat-label {
-        font-size: 0.8rem;
+        font-size: 1rem;
         font-weight: 500;
         color: var(--bs-secondary);
     }
 
     .stat-value {
-        font-size: 0.9rem;
+        font-size: 1rem;
         font-weight: 600;
         min-width: 1.5em;
         text-align: center;
@@ -528,7 +528,7 @@ header {
 
 // Make logo and title slightly smaller
 .title {
-    font-size: 1.2rem !important;
+    font-size: 1rem !important;
 }
 
 </style>

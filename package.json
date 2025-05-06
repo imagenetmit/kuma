@@ -34,11 +34,11 @@
         "playwright-show-report": "playwright show-report ./private/playwright-report",
         "tsc": "tsc",
         "vite-preview-dist": "vite preview --host --config ./config/vite.config.js",
-        "build-docker-base": "docker buildx build -f docker/debian-base.dockerfile --platform linux/amd64,linux/arm64,linux/arm/v7 -t louislam/uptime-kuma:base2 --target base2 . --push",
-        "build-docker-base-slim": "docker buildx build -f docker/debian-base.dockerfile --platform linux/amd64,linux/arm64,linux/arm/v7 -t louislam/uptime-kuma:base2-slim --target base2-slim . --push",
-        "build-docker-builder-go": "docker buildx build -f docker/builder-go.dockerfile --platform linux/amd64,linux/arm64,linux/arm/v7 -t louislam/uptime-kuma:builder-go . --push",
-        "build-docker-nightly-local": "npm run build && docker build -f docker/dockerfile -t louislam/uptime-kuma:nightly2 --target nightly .",
-        "build-docker-pr-test": "docker buildx build -f docker/dockerfile --platform linux/amd64,linux/arm64 -t louislam/uptime-kuma:pr-test2 --target pr-test2 . --push",
+        "build-docker-base": "docker build -f docker/debian-base.dockerfile -t imagenetmit/kuma:base2 --target base2 .",
+        "build-docker-base-slim": "docker build -f docker/debian-base.dockerfile -t imagenetmit/kuma:base2-slim --target base2-slim .",
+        "build-docker-builder-go": "docker build -f docker/builder-go.dockerfile -t imagenetmit/kuma:builder-go .",
+        "build-docker-nightly-local": "npm run build && docker build -f docker/dockerfile -t imagenetmit/kuma:nightly2 --target nightly .",
+        "build-docker-pr-test": "docker build -f docker/dockerfile -t imagenetmit/kuma:pr-test2 --target pr-test2 .",
         "upload-artifacts": "node extra/release/upload-artifacts.mjs",
         "upload-artifacts-beta": "node extra/release/upload-artifacts-beta.mjs",
         "setup": "git checkout 1.23.15 && npm ci --production && npm run download-dist",
@@ -67,9 +67,11 @@
         "reset-migrate-aggregate-table-state": "node extra/reset-migrate-aggregate-table-state.js"
     },
     "dependencies": {
+        "@dotenvx/dotenvx": "^1.39.0",
         "@grpc/grpc-js": "~1.8.22",
         "@louislam/ping": "~0.4.4-mod.1",
         "@louislam/sqlite3": "15.1.6",
+        "@mdi/font": "^7.4.47",
         "@vvo/tzdb": "^6.125.0",
         "args-parser": "~1.3.0",
         "axios": "~0.28.1",
@@ -140,6 +142,7 @@
         "tcp-ping": "~0.1.1",
         "thirty-two": "~1.0.2",
         "tough-cookie": "~4.1.3",
+        "vuetify": "^3.7.18",
         "ws": "^8.13.0"
     },
     "devDependencies": {
@@ -207,5 +210,6 @@
         "vuedraggable": "~4.1.0",
         "wait-on": "^7.2.0",
         "whatwg-url": "~12.0.1"
-    }
+    },
+    "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

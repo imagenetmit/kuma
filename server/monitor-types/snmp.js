@@ -46,9 +46,9 @@ class SNMPMonitorType extends MonitorType {
 
             if (status) {
                 heartbeat.status = UP;
-                heartbeat.msg = `JSON query passes (comparing ${response} ${monitor.jsonPathOperator} ${monitor.expectedValue})`;
+                heartbeat.msg = `SNMP query passes (comparing ${response} ${monitor.jsonPathOperator} ${monitor.expectedValue})`;
             } else {
-                throw new Error(`JSON query does not pass (comparing ${response} ${monitor.jsonPathOperator} ${monitor.expectedValue})`);
+                throw new Error(`SNMP query does not pass (comparing ${response} ${monitor.jsonPathOperator} ${monitor.expectedValue})`);
             }
         } finally {
             if (session) {

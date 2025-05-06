@@ -13,6 +13,7 @@ const childProcessAsync = require("promisify-child-process");
 const path = require("path");
 const axios = require("axios");
 const { isSSL, sslKey, sslCert, sslKeyPassphrase } = require("./config");
+const { TimeLogger } = require("../src/util");
 // DO NOT IMPORT HERE IF THE MODULES USED `UptimeKumaServer.getInstance()`, put at the bottom of this file instead.
 
 /**
@@ -201,8 +202,15 @@ class UptimeKumaServer {
      * @returns {Promise<object>} List of monitors
      */
     async sendMonitorList(socket) {
+        const timeLogger = new TimeLogger();
+        log.info("db", "Starting monitor list query...");
+        
         let list = await this.getMonitorJSONList(socket.userID);
+        
+        log.info("db", `Monitor list query completed: ${Object.keys(list).length} monitors`);
         this.io.to(socket.userID).emit("monitorList", list);
+        
+        timeLogger.print("sendMonitorList total time");
         return list;
     }
 
@@ -251,6 +259,8 @@ class UptimeKumaServer {
             id: monitor.id,
             active: monitor.active,
             name: monitor.name,
+            client_id: monitor.client_id,
+            location_id: monitor.location_id,
         }));
         const preloadData = await Monitor.preparePreloadData(monitorData);
 

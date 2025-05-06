@@ -9,13 +9,19 @@ db
 !/data/.gitkeep
 /data*
 .vscode
-
+/tcpresponder/.env
 /private
 /out
 /tmp
 .env
 .venv/
 /db*
+.venv
+/db*
+*.pyc
+*.db
+*.ipynb
+*.json
 /extra/healthcheck.exe
 /extra/healthcheck
 /extra/healthcheck-armv7
@@ -32,3 +38,5 @@ extra/exe-builder/obj
 .log
 __pycache__/
 tcpresponder/*
+*.log
+tcpresponder/devices_df.csv

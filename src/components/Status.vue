@@ -1,5 +1,14 @@
 <template>
-    <span class="badge rounded-pill compact-status" :class=" 'bg-' + color ">{{ text }}</span>
+    <span
+        class="badge status-badge"
+        :class="{
+            'bg-danger': status === 0,
+            'bg-success': status === 1,
+            'bg-warning': status === 2,
+            'bg-secondary': status === 3,
+            'bg-secondary': status === 4
+        }"
+    >{{ text }}</span>
 </template>
 
 <script>
@@ -13,26 +22,6 @@ export default {
     },
 
     computed: {
-        color() {
-            if (this.status === 0) {
-                return "danger";
-            }
-
-            if (this.status === 1) {
-                return "primary";
-            }
-
-            if (this.status === 2) {
-                return "warning";
-            }
-
-            if (this.status === 3) {
-                return "maintenance";
-            }
-
-            return "secondary";
-        },
-
         text() {
             if (this.status === 0) {
                 return this.$t("Down");
@@ -57,16 +46,17 @@ export default {
 </script>
 
 <style scoped>
-    span {
-        min-width: 52px;
-        padding: 0.2em 0.5em;
-        font-size: 0.75em;
-        line-height: 1.2;
-    }
-
-    .compact-status {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
+.status-badge {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 60px;
+    width: 60px;
+    height: 20px;
+    padding: 0 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 </style>

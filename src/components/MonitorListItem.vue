@@ -1,61 +1,81 @@
 <template>
-    <div>
-        <div :style="depthMargin">
-            <!-- Checkbox -->
-            <div v-if="isSelectMode" class="select-input-wrapper">
+    <template v-for="(item, index) in [monitor, ...sortedChildMonitorList]" :key="index">
+        <tr :class="{ 'child-row': item !== monitor }" :style="item !== monitor ? depthMargin : {}">
+            <!-- Select Column -->
+            <td v-if="isSelectMode" class="select-column">
                 <input
+                    v-if="item === monitor"
                     class="form-check-input select-input form-check-input-sm"
                     type="checkbox"
                     :aria-label="$t('Check/Uncheck')"
-                    :checked="isSelected(monitor.id)"
+                    :checked="isSelected(item.id)"
                     @click.stop="toggleSelection"
                 />
-            </div>
+            </td>
 
-            <router-link :to="monitorURL(monitor.id)" class="item compact-item" :class="{ 'disabled': ! monitor.active }">
-                <div class="row g-1">
-                    <div class="col-9 col-md-8 small-padding" :class="{ 'monitor-item': $root.userHeartbeatBar == 'bottom' || $root.userHeartbeatBar == 'none' }">
-                        <div class="info">
-                            <Uptime :monitor="monitor" type="24" :pill="true" class="compact-uptime" />
-                            <span v-if="hasChildren" class="collapse-padding" @click.prevent="changeCollapsed">
-                                <font-awesome-icon icon="chevron-down" class="animated" :class="{ collapsed: isCollapsed}" size="sm" />
-                            </span>
-                            <span class="monitor-name">{{ monitor.name }}</span>
-                        </div>
-                        <div v-if="monitor.tags.length > 0" class="tags">
-                            <Tag v-for="tag in monitor.tags" :key="tag" :item="tag" :size="'sm'" class="compact-tag" />
-                        </div>
-                    </div>
-                    <div v-show="$root.userHeartbeatBar == 'normal'" :key="$root.userHeartbeatBar" class="col-3 col-md-4 pe-2">
-                        <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="monitor.id" />
-                    </div>
+            <!-- Name Column -->
+            <td class="name-column">
+                <div class="d-flex align-items-center">
+                    <span v-if="item === monitor && hasChildren" class="collapse-padding me-2" @click.prevent="changeCollapsed">
+                        <font-awesome-icon icon="chevron-down" class="animated" :class="{ collapsed: isCollapsed}" size="sm" />
+                    </span>
+                    <router-link :to="monitorURL(item.id)" class="monitor-name" :class="{ 'disabled': !item.active }">
+                        {{ item.name }}
+                    </router-link>
                 </div>
-
-                <div v-if="$root.userHeartbeatBar == 'bottom'" class="row g-1">
-                    <div class="col-12 bottom-style">
-                        <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="monitor.id" />
-                    </div>
+                <div v-if="item.tags.length > 0" class="tags">
+                    <Tag v-for="tag in item.tags" :key="tag" :item="tag" :size="'sm'" class="compact-tag" />
                 </div>
-            </router-link>
-        </div>
+            </td>
 
-        <transition name="slide-fade-up">
-            <div v-if="!isCollapsed" class="childs">
-                <MonitorListItem
-                    v-for="(item, index) in sortedChildMonitorList"
-                    :key="index"
-                    :monitor="item"
-                    :isSelectMode="isSelectMode"
-                    :isSelected="isSelected"
-                    :select="select"
-                    :deselect="deselect"
-                    :depth="depth + 1"
-                    :filter-func="filterFunc"
-                    :sort-func="sortFunc"
-                />
-            </div>
-        </transition>
-    </div>
+            <!-- Client Column -->
+            <td class="client-column">
+                <span v-if="item.client" class="client-info" :title="'Client: ' + item.client.name">
+                    {{ item.client.name }}
+                </span>
+            </td>
+
+            <!-- Location Column -->
+            <td class="location-column">
+                <span v-if="item.location" class="location-info" :title="'Location: ' + item.location.name">
+                    {{ item.location.name }}
+                </span>
+            </td>
+
+            <!-- Heartbeat Column -->
+            <td v-if="$root.userHeartbeatBar == 'normal'" class="heartbeat-column">
+                <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="item.id" />
+            </td>
+
+            <!-- Uptime Column -->
+            <td class="uptime-column">
+                <Uptime :monitor="item" type="24" :pill="true" class="compact-uptime" />
+            </td>
+        </tr>
+
+        <!-- Bottom Heartbeat Bar Row -->
+        <tr v-if="item === monitor && $root.userHeartbeatBar == 'bottom'" class="bottom-heartbeat-row">
+            <td :colspan="isSelectMode ? 6 : 5">
+                <HeartbeatBar ref="heartbeatBar" size="small" :monitor-id="item.id" />
+            </td>
+        </tr>
+    </template>
+
+    <!-- Child Items -->
+    <template v-if="!isCollapsed">
+        <MonitorListItem
+            v-for="(childItem, index) in sortedChildMonitorList"
+            :key="'child-' + index"
+            :monitor="childItem"
+            :isSelectMode="isSelectMode"
+            :isSelected="isSelected"
+            :select="select"
+            :deselect="deselect"
+            :depth="depth + 1"
+            :filter-func="filterFunc"
+            :sort-func="sortFunc"
+        />
+    </template>
 </template>
 
 <script>
@@ -115,7 +135,7 @@ export default {
     },
     data() {
         return {
-            isCollapsed: true,
+            isCollapsed: false,
         };
     },
     computed: {
@@ -147,46 +167,7 @@ export default {
             // this.$refs.heartbeatBar.resize();
         }
     },
-    beforeMount() {
-
-        // Always unfold if monitor is accessed directly
-        if (this.monitor.childrenIDs.includes(parseInt(this.$route.params.id))) {
-            this.isCollapsed = false;
-            return;
-        }
-
-        // Set collapsed value based on local storage
-        let storage = window.localStorage.getItem("monitorCollapsed");
-        if (storage === null) {
-            return;
-        }
-
-        let storageObject = JSON.parse(storage);
-        if (storageObject[`monitor_${this.monitor.id}`] == null) {
-            return;
-        }
-
-        this.isCollapsed = storageObject[`monitor_${this.monitor.id}`];
-    },
     methods: {
-        /**
-         * Changes the collapsed value of the current monitor and saves
-         * it to local storage
-         * @returns {void}
-         */
-        changeCollapsed() {
-            this.isCollapsed = !this.isCollapsed;
-
-            // Save collapsed value into local storage
-            let storage = window.localStorage.getItem("monitorCollapsed");
-            let storageObject = {};
-            if (storage !== null) {
-                storageObject = JSON.parse(storage);
-            }
-            storageObject[`monitor_${this.monitor.id}`] = this.isCollapsed;
-
-            window.localStorage.setItem("monitorCollapsed", JSON.stringify(storageObject));
-        },
         /**
          * Get URL of monitor
          * @param {number} id ID of monitor
@@ -213,11 +194,66 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/vars.scss";
 
-.small-padding {
-    padding: 0 1px !important;
+.child-row {
+    background-color: rgba(0, 0, 0, 0.01) !important;
 }
 
-.collapse-padding {
+.bottom-heartbeat-row {
+    background-color: rgba(0, 0, 0, 0.01);
+    
+    td {
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+.monitor-name {
+    color: inherit;
+    text-decoration: none;
+    font-weight: 500;
+    
+    &:hover {
+        text-decoration: underline;
+    }
+    
+    &.disabled {
+        opacity: 0.6;
+    }
+}
+
+.tags {
+    margin-top: 0.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.uptime-column {
+    text-align: left;
+}
+
+td.uptime-column {
+    text-align: left;
+    padding-right: 0 !important;
+}
+
+.compact-uptime {
+    display: inline-block;
+}
+
+/* Remove all duplicate and conflicting styles */
+.uptime-wrapper {
+    display: none;
+}
+
+.select-input {
+    margin: 0;
+}
+
+td {
+    padding: 0.5rem !important;
+}
+
+.small-padding {
     padding: 0 1px !important;
 }
 
@@ -227,14 +263,6 @@ export default {
     display: flex;
     flex-wrap: wrap;
     gap: 1px;
-}
-
-.collapsed {
-    transform: rotate(-90deg);
-}
-
-.animated {
-    transition: all 0.15s $easing-in;
 }
 
 .select-input-wrapper {
@@ -247,15 +275,13 @@ export default {
 
 .compact-item {
     display: block;
-    padding: 1px 2px;
+    // padding: 1px 1px;
     text-decoration: none;
     color: inherit;
-    //border-radius: 1px;
     margin: 0;
     
     &:hover {
         background-color: rgba(0, 0, 0, 0.03);
-        outline: 1px rgb(26, 41, 20);  /* Debug outline */
     }
 
     &.disabled {
@@ -266,19 +292,21 @@ export default {
 .info {
     display: flex;
     align-items: center;
-    font-size: 0.9rem;
-    gap: 10px;
+    font-size: 1rem;
+    gap: 0;
     padding: 0;
     margin: 0;
+    width: 100%;
+    overflow: hidden;
 }
 
 .monitor-name {
-    //outline: 1px dashed purple;  /* Debug outline */
     margin: 0;
-    padding: 0 2px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+    min-width: 0; /* Allows flex item to shrink below its content size */
 }
 
 .compact-uptime {
@@ -296,50 +324,115 @@ export default {
 }
 
 .item {
-    //outline: 2px solid green;  /* Debug outline */
-    //background: rgba(0, 255, 0, 0.05);  /* Light green background */
     display: flex !important;  // Override block display
     flex-direction: column;
-    //padding: 0 !important;
     margin: 0;
 }
 
 .row {
-    //outline: 1px dashed purple;  /* Debug outline */
-    //background: rgba(128, 0, 128, 0.05);  /* Light purple background */
     --bs-gutter-x: 0;
-    --bs-gutter-y: 0;  //this was the bastard that was causing the issue
-    margin: 0;
-    padding: 0;
+    --bs-gutter-y: 0;  
+    margin: 0 4px 0 0;
+    padding: 0 4px 0 0;
     display: flex;
     align-items: center;
 }
 
 .col-9, .col-md-8, .col-3, .col-md-4 {
-    padding: 0;
-    //width: auto;  // Let content determine width
-    //flex: 0 0 auto;  // Don't grow or shrink
+    padding: 0 4px;
 }
 
 .col-3, .col-md-4 {
     margin-left: auto;  // Push to right
 }
 
-.compact-item {
-    padding: 1px !important;
-    text-decoration: none;
-    color: inherit;
-    margin: 0;
-    //line-height: 1;
+/* New styling for the uptime pill container */
+.uptime-pill-container {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end; /* Align to the right of its column */
+    padding-right: 5px;
+    font-size: 0.8rem;
+}
+
+.heartbeat-bar-container {
+    padding-right: 0;
+    align-items: flex-end;
+    justify-content: flex-end;
     
-    &:hover {
-        background-color: rgba(0, 0, 0, 0.473);
-        //outline: 1px rgb(26, 41, 20);  /* Debug outline */
+}
+
+/* Make the uptime badge more compact if needed */
+.compact-uptime :deep(.badge) {
+    min-width: 50px;  /* Reduce minimum width */
+    padding: 0.2em 0.35em;
+    font-size: 0.7em;
+    background-color: #28a745;  /* Bootstrap's success green */
+    color: white;
+}
+
+.debug-grid {
+    .row {
+        background-color: rgba(255, 0, 0, 0.1);  /* Light red */
+        border: 1px dashed red;
     }
 
+    .col-9, .col-md-8, .col-6, .col-md-4, .col-1, .col-md-1 {
+        background-color: rgba(0, 0, 255, 0.1);  /* Light blue */
+        border: 1px solid blue;
+    }
+
+    .uptime-pill-container {
+        background-color: rgba(0, 255, 0, 0.1);  /* Light green */
+        border: 1px solid green;
+    }
+}
+
+.client-info, .location-info, .type-info {
+    font-size: 0.8rem;
+    color: #666;
+    margin-left: 4px;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 120px; /* Fixed width for both client and location */
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.dark {
+    .client-info, .location-info {
+        color: #999;
+    }
+}
+
+.monitor-name {
+    color: inherit;
+    text-decoration: none;
+    
+    &:hover {
+        text-decoration: underline;
+    }
+    
     &.disabled {
         opacity: 0.6;
     }
 }
 
+.tags {
+    margin-top: 0.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.uptime-column {
+    text-align: right;
+    
+    .d-flex {
+        justify-content: flex-end;
+        width: 100%;
+    }
+}
 </style>

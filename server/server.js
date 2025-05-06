@@ -150,6 +150,7 @@ const { resetChrome } = require("./monitor-types/real-browser-monitor-type");
 const { EmbeddedMariaDB } = require("./embedded-mariadb");
 const { SetupDatabase } = require("./setup-database");
 const { chartSocketHandler } = require("./socket-handlers/chart-socket-handler");
+const { clientSocketHandler } = require("./socket-handlers/client-socket-handler");
 
 app.use(express.json());
 
@@ -324,8 +325,12 @@ let needSetup = false;
 
     log.debug("server", "Adding socket handler");
     io.on("connection", async (socket) => {
-
         await sendInfo(socket, true);
+
+        // Register socket handlers
+        generalSocketHandler(socket, server);
+        databaseSocketHandler(socket);
+        clientSocketHandler(socket);
 
         if (needSetup) {
             log.info("server", "Redirect to setup page");
@@ -391,31 +396,30 @@ let needSetup = false;
 
         socket.on("login", async (data, callback) => {
             const clientIP = await server.getClientIP(socket);
+            const startTime = Date.now();
+            
+            log.info("auth", `[${startTime}] Login attempt starting for user ${data.username}. IP=${clientIP}`);
 
-            log.info("auth", `Login by username + password. IP=${clientIP}`);
-
-            // Checking
-            if (typeof callback !== "function") {
-                return;
-            }
-
-            if (!data) {
-                return;
-            }
-
-            // Login Rate Limit
+            try {
+                // Login Rate Limit check
             if (!await loginRateLimiter.pass(callback)) {
-                log.info("auth", `Too many failed requests for user ${data.username}. IP=${clientIP}`);
+                    log.info("auth", `[${Date.now()}] Rate limit hit for user ${data.username}. IP=${clientIP}`);
                 return;
             }
 
+                log.info("auth", `[${Date.now()}] Starting database user lookup`);
             let user = await login(data.username, data.password);
+                log.info("auth", `[${Date.now()}] Database lookup completed in ${Date.now() - startTime}ms`);
 
             if (user) {
                 if (user.twofa_status === 0) {
+                        const beforeLoginTime = Date.now();
+                        log.info("auth", `[${beforeLoginTime}] Starting afterLogin process`);
                     await afterLogin(socket, user);
+                        log.info("auth", `[${Date.now()}] afterLogin completed in ${Date.now() - beforeLoginTime}ms`);
 
-                    log.info("auth", `Successfully logged in user ${data.username}. IP=${clientIP}`);
+                        const endTime = Date.now();
+                        log.info("auth", `[${endTime}] Login successful. Total time: ${endTime - startTime}ms`);
 
                     callback({
                         ok: true,
@@ -471,11 +475,20 @@ let needSetup = false;
                 });
             }
 
+            } catch (e) {
+                const errorTime = Date.now();
+                log.error("auth", `[${errorTime}] Login error after ${errorTime - startTime}ms: ${e.message}`);
+                callback({
+                    ok: false,
+                    msg: e.message,
+                });
+            }
         });
 
         socket.on("logout", async (callback) => {
             // Rate Limit
             if (!await loginRateLimiter.pass(callback)) {
+                    return;
                 return;
             }
 
@@ -716,9 +729,26 @@ let needSetup = false;
                 monitor.kafkaProducerBrokers = JSON.stringify(monitor.kafkaProducerBrokers);
                 monitor.kafkaProducerSaslOptions = JSON.stringify(monitor.kafkaProducerSaslOptions);
 
-                monitor.conditions = JSON.stringify(monitor.conditions);
+                monitor.conditions = JSON.stringify(monitor.conditions || []);
 
                 monitor.rabbitmqNodes = JSON.stringify(monitor.rabbitmqNodes);
+                
+                // Handle client and location
+                if (monitor.clientId) {
+                    monitor.client_id = parseInt(monitor.clientId);
+                    if (isNaN(monitor.client_id)) {
+                        monitor.client_id = null;
+                    }
+                }
+                delete monitor.clientId;
+                
+                if (monitor.locationId) {
+                    monitor.location_id = parseInt(monitor.locationId);
+                    if (isNaN(monitor.location_id)) {
+                        monitor.location_id = null;
+                    }
+                }
+                delete monitor.locationId;
 
                 bean.import(monitor);
                 bean.user_id = socket.userID;
@@ -873,7 +903,26 @@ let needSetup = false;
                 bean.rabbitmqNodes = JSON.stringify(monitor.rabbitmqNodes);
                 bean.rabbitmqUsername = monitor.rabbitmqUsername;
                 bean.rabbitmqPassword = monitor.rabbitmqPassword;
-                bean.conditions = JSON.stringify(monitor.conditions);
+                bean.conditions = JSON.stringify(monitor.conditions || []);
+                
+                // Handle client and location
+                if (monitor.clientId) {
+                    bean.client_id = parseInt(monitor.clientId);
+                    if (isNaN(bean.client_id)) {
+                        bean.client_id = null;
+                    }
+                } else {
+                    bean.client_id = null;
+                }
+                
+                if (monitor.locationId) {
+                    bean.location_id = parseInt(monitor.locationId);
+                    if (isNaN(bean.location_id)) {
+                        bean.location_id = null;
+                    }
+                } else {
+                    bean.location_id = null;
+                }
 
                 bean.validate();
 
@@ -933,8 +982,11 @@ let needSetup = false;
                     monitorID,
                     socket.userID,
                 ]);
-                const monitorData = [{ id: monitor.id,
-                    active: monitor.active
+                const monitorData = [{ 
+                    id: monitor.id,
+                    active: monitor.active,
+                    client_id: monitor.client_id,
+                    location_id: monitor.location_id
                 }];
                 const preloadData = await Monitor.preparePreloadData(monitorData);
                 callback({
@@ -1674,33 +1726,42 @@ async function afterLogin(socket, user) {
     socket.userID = user.id;
     socket.join(user.id);
 
-    let monitorList = await server.sendMonitorList(socket);
-    await Promise.allSettled([
-        sendInfo(socket),
-        server.sendMaintenanceList(socket),
-        sendNotificationList(socket),
-        sendProxyList(socket),
-        sendDockerHostList(socket),
-        sendAPIKeyList(socket),
-        sendRemoteBrowserList(socket),
-        sendMonitorTypeList(socket),
-    ]);
+    // Send basic user info immediately
+    await sendInfo(socket);
+    
+    // Start async loading of all other data
+    loadUserData(socket, user).catch(err => {
+        log.error("auth", "Error loading user data:", err);
+    });
 
-    await StatusPage.sendStatusPageList(io, socket);
+    return true;
+}
 
-    const monitorPromises = [];
-    for (let monitorID in monitorList) {
-        monitorPromises.push(sendHeartbeatList(socket, monitorID));
-        monitorPromises.push(Monitor.sendStats(io, monitorID, user.id));
-    }
+async function loadUserData(socket, user) {
+    try {
+        let monitorList = await server.sendMonitorList(socket);
+        await Promise.allSettled([
+            server.sendMaintenanceList(socket),
+            sendNotificationList(socket),
+            sendProxyList(socket),
+            sendDockerHostList(socket),
+            sendAPIKeyList(socket),
+            sendRemoteBrowserList(socket),
+            sendMonitorTypeList(socket),
+        ]);
 
-    await Promise.all(monitorPromises);
+        await StatusPage.sendStatusPageList(io, socket);
 
-    // Set server timezone from client browser if not set
-    // It should be run once only
-    if (! await Settings.get("initServerTimezone")) {
-        log.debug("server", "emit initServerTimezone");
-        socket.emit("initServerTimezone");
+        const monitorPromises = [];
+        for (let monitorID in monitorList) {
+            monitorPromises.push(sendHeartbeatList(socket, monitorID));
+            monitorPromises.push(Monitor.sendStats(io, monitorID, user.id));
+        }
+
+        await Promise.all(monitorPromises);
+    } catch (err) {
+        log.error("auth", "Error in loadUserData:", err);
+        throw err;
     }
 }
 

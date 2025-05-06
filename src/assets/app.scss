@@ -5,7 +5,9 @@
 #app {
     font-family: BlinkMacSystemFont, segoe ui, Roboto, helvetica neue, Arial, noto sans, sans-serif, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji;
 }
-
+html {
+    font-size: 14px;
+}
 h1 {
     font-size: 32px;
 }
@@ -15,7 +17,7 @@ h2 {
 }
 
 textarea.form-control {
-    border-radius: 19px;
+    border-radius: 5px;
 }
 
 ::-webkit-scrollbar {
@@ -41,7 +43,7 @@ textarea.form-control {
 }
 
 .list-group {
-    border-radius: 0.75rem;
+    border-radius: 5px;
 
     .dark & {
         .list-group-item {
@@ -81,7 +83,7 @@ optgroup {
 }
 
 .modal-content {
-    border-radius: 1rem;
+    border-radius: 5px;
     box-shadow: 0 15px 70px rgba(0, 0, 0, 0.1);
 
     .dark & {
@@ -98,11 +100,11 @@ optgroup {
 .shadow-box {
     //overflow: hidden;   // Forget why add this, but multiple select hide by this
     box-shadow: 0 15px 70px rgba(0, 0, 0, 0.1);
-    padding: 10px;
-    border-radius: 10px;
+    padding: 5px;
+    border-radius: 5px;
 
     &.big-padding {
-        padding: 20px;
+        padding: 10px;
     }
 }
 
@@ -112,7 +114,8 @@ optgroup {
 }
 
 .btn-sm {
-    border-radius: 25px;
+    border-radius: 5px;
+    font-size: 14px;
 }
 
 .btn-primary {
@@ -163,9 +166,9 @@ optgroup {
 }
 
 .btn-outline-normal {
-    padding: 4px 10px;
+    padding: 5px 10px;
     border: 1px solid #ced4da;
-    border-radius: 25px;
+    border-radius: 5px;
     background-color: transparent;
 
     .dark & {
@@ -471,8 +474,8 @@ optgroup {
     .item {
         display: block;
         text-decoration: none;
-        padding: 13px 15px 10px 15px;
-        border-radius: 10px;
+        padding: 0px 15px 0px 15px;
+        border-radius: 5px;
         transition: all ease-in-out 0.15s;
 
         &.disabled {
@@ -525,7 +528,7 @@ optgroup {
 [contenteditable=true] {
     transition: all $easing-in 0.2s;
     background-color: rgba(239, 239, 239, 0.7);
-    border-radius: 8px;
+    border-radius: 5px;
 
     &.no-bg {
         background-color: transparent !important;
@@ -565,7 +568,7 @@ optgroup {
 }
 
 .vue-image-crop-upload .vicp-wrap {
-    border-radius: 10px !important;
+    border-radius: 5px !important;
 }
 
 .spinner {
@@ -594,7 +597,7 @@ h5.settings-subheading::after {
 .code-editor, .css-editor {
     /* we dont use `language-` classes anymore so thats why we need to add background and text color manually */
 
-    border-radius: 1rem;
+    border-radius: 5px;
     padding: 10px 5px;
     border: 1px solid #ced4da;
 
@@ -622,7 +625,7 @@ $shadow-box-padding: 20px;
     z-index: 10;
     background-color: rgba(white, 0.2);
     backdrop-filter: blur(2px);
-    border-radius: 0 0 10px 10px;
+    border-radius: 0 0 5px 5px;
 
     .dark & {
         background-color: rgba($dark-header-bg, 0.9);

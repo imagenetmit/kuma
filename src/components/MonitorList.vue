@@ -1,12 +1,13 @@
 <template>
-    <div class="shadow-box mb-2" :style="boxStyle">
+    <div class="shadow-box mb-2">
         <div class="list-header">
             <div class="header-top py-1 px-2">
                 <button class="btn btn-sm btn-outline-normal" :class="{ 'active': selectMode }" type="button" @click="selectMode = !selectMode">
                     {{ $t("Select") }}
                 </button>
 
-                <div class="placeholder"></div>
+                <MonitorListFilter :filterState="filterState" @update-filter="updateFilter" />
+
                 <div class="search-wrapper">
                     <a v-if="searchText == ''" class="search-icon">
                         <font-awesome-icon icon="search" size="sm" />
@@ -24,9 +25,6 @@
                         />
                     </form>
                 </div>
-            </div>
-            <div class="header-filter px-2">
-                <MonitorListFilter :filterState="filterState" @update-filter="updateFilter" />
             </div>
 
             <!-- Selection Controls -->
@@ -48,23 +46,60 @@
                     {{ $t("selectedMonitorCount", [ selectedMonitorCount ]) }}
                 </span>
             </div>
-        </div>
-        <div ref="monitorList" class="monitor-list px-2" :class="{ scrollbar: scrollbar }" :style="monitorListStyle" data-testid="monitor-list">
-            <div v-if="Object.keys($root.monitorList).length === 0" class="text-center mt-2">
-                {{ $t("No Monitors, please") }} <router-link to="/add">{{ $t("add one") }}</router-link>
+            
+            <!-- Header Table -->
+            <div class="header-table px-2">
+                <table class="table table-borderless table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th v-if="selectMode" class="select-column"></th>
+                            <th class="name-column">{{ $t("Name") }}</th>
+                            <th class="client-column">{{ $t("Client") }}</th>
+                            <th class="location-column">{{ $t("Location") }}</th>
+                            <th v-if="$root.userHeartbeatBar == 'normal'" class="heartbeat-column">{{ $t("Heartbeat") }}</th>
+                            <th class="uptime-column">{{ $t("Uptime") }}</th>
+                        </tr>
+                    </thead>
+                </table>
             </div>
-
-            <MonitorListItem
-                v-for="(item, index) in sortedMonitorList"
-                :key="index"
-                :monitor="item"
-                :isSelectMode="selectMode"
-                :isSelected="isSelected"
-                :select="select"
-                :deselect="deselect"
-                :filter-func="filterFunc"
-                :sort-func="sortFunc"
-            />
+        </div>
+        
+        <!-- Content Table with Scrollbar -->
+        <div ref="monitorList" class="table shadow-box py-2 px-3" style="overflow-x: hidden; overflow-y: auto;">
+            <table class="table table-borderless table-hover table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th v-if="selectMode" class="select-column"></th>
+                        <th class="name-column"></th>
+                        <th class="client-column"></th>
+                        <th class="location-column"></th>
+                        <th v-if="$root.userHeartbeatBar == 'normal'" class="heartbeat-column"></th>
+                        <th class="uptime-column"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template v-if="Object.keys($root.monitorList).length === 0">
+                        <tr>
+                            <td :colspan="selectMode ? 6 : 5" class="text-center">
+                                {{ $t("No Monitors, please") }} <router-link to="/add">{{ $t("add one") }}</router-link>
+                            </td>
+                        </tr>
+                    </template>
+                    <template v-else>
+                        <MonitorListItem
+                            v-for="(item, index) in sortedMonitorList"
+                            :key="index"
+                            :monitor="item"
+                            :isSelectMode="selectMode"
+                            :isSelected="isSelected"
+                            :select="select"
+                            :deselect="deselect"
+                            :filter-func="filterFunc"
+                            :sort-func="sortFunc"
+                        />
+                    </template>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -116,7 +151,7 @@ export default {
         boxStyle() {
             if (window.innerWidth > 550) {
                 return {
-                    height: `calc(100vh - 160px + ${this.windowTop}px)`,
+                    height: `calc(100vh - 80px + ${this.windowTop}px)`,
                 };
             } else {
                 return {
@@ -153,14 +188,9 @@ export default {
         },
 
         monitorListStyle() {
-            let listHeaderHeight = 107;
-
-            if (this.selectMode) {
-                listHeaderHeight += 42;
-            }
-
+            let listHeaderHeight = this.selectMode ? 107 : 65;
             return {
-                "height": `calc(100% - ${listHeaderHeight}px)`
+                height: `calc(100% - ${listHeaderHeight}px)`
             };
         },
 
@@ -404,16 +434,11 @@ export default {
     margin: 0;
 }
 
-.small-padding {
-    padding-left: 4px !important;
-    padding-right: 4px !important;
-}
-
 .list-header {
     border-bottom: 1px solid #dee2e6;
     border-radius: 4px 4px 0 0;
-    margin: 0 0 6px 0;  // Remove negative margins
-    padding: 4px 4px 2px 4px;  // Minimal padding
+    margin: 0 0 6px 0;
+    padding: 4px 4px 2px 4px;
 
     .dark & {
         background-color: $dark-header-bg;
@@ -421,25 +446,80 @@ export default {
     }
 }
 
-.header-top, .header-filter {
-    padding: 2px;  // Minimal padding
-    margin: 0;
-}
-
 .header-top {
+    padding: 2px;
+    margin: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
 }
 
-.header-filter {
+.header-table {
+    margin-bottom: 2px;
+}
+
+table {
+    font-size: 13px;
+    width: 100%;
+    table-layout: fixed;
+
+    th, td {
+        padding: 0.3rem;
+        font-size: 12px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    th {
+        text-align: left;
+        font-weight: normal;
+        color: inherit;
+    }
+    
+    tr {
+        transition: all ease-in-out 0.2ms;
+        border-style: none;
+    }
+}
+
+.selection-controls {
     display: flex;
     align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    margin: 0;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    
+    .dark & {
+        background-color: $dark-header-bg;
+        border-top-color: rgba(255, 255, 255, 0.05);
+    }
+}
+
+/* Column widths */
+.select-column { width: 40px; }
+.name-column { width: 25%; }
+.client-column { width: 15%; }
+.location-column { width: 15%; }
+.heartbeat-column { width: 35%; min-width: 300px; }
+.uptime-column { 
+    width: 8%; 
+    min-width: 70px; 
+    text-align: left;
+}
+
+/* Remove the deep selector since we're aligning left now */
+:deep(.uptime-column) {
+    text-align: left;
 }
 
 .search-wrapper {
     display: flex;
     align-items: center;
+    margin-left: auto; /* Push the search to the right */
 }
 
 .search-icon {
@@ -462,32 +542,9 @@ export default {
     font-size: 0.875rem;  // Added for smaller text
 }
 
-.monitor-list {
-    display: flex;
-    flex-direction: column;
-    padding: 0 !important;
-    margin: 0;
-    > * {
-        margin-bottom: 1px;
-        &:last-child {
-            margin-bottom: 0;
-        }
-    }
-}
-
-.selection-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;  // Reduced from 10px
-}
-
-// Added compact form styles
-.compact-form {
-    margin: 0;
-    
-    input {
-        padding: 0.25rem 0.5rem;
-    }
+.small-padding {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
 }
 
 .px-2 {
@@ -500,6 +557,90 @@ export default {
         margin: -12px;  // Reduced from -20px
         margin-bottom: 8px;
         padding: 4px;  // Reduced from 5px
+    }
+}
+
+.filter-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-radius: 4px;
+    margin-bottom: 6px;
+
+    .dark & {
+        background-color: $dark-header-bg;
+    }
+
+    input {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 14px;
+        background: transparent;
+        
+        &:focus {
+            outline: none;
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .dark & {
+            border-color: rgba(255, 255, 255, 0.1);
+            color: $dark-font-color;
+
+            &:focus {
+                border-color: rgba(255, 255, 255, 0.2);
+            }
+        }
+    }
+}
+
+.table > :not(caption) > * > * {
+    padding: 0.5rem;
+    background-color: transparent;
+    border-bottom-width: 0;
+    box-shadow: none;
+    border: none;
+}
+
+.table.shadow-box {
+    height: calc(100% - 100px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    
+    table {
+        thead {
+            tr {
+                border: none;
+            }
+            
+            th {
+                border: none;
+                background-color: transparent;
+                padding: 0;
+                height: 0;
+                overflow: hidden;
+            }
+        }
+        
+        td {
+            border: none;
+        }
+    }
+}
+
+// Override Bootstrap table styles
+.table-borderless > :not(caption) > * > * {
+    border-bottom-width: 0;
+}
+
+// Added compact form styles
+.compact-form {
+    margin: 0;
+    
+    input {
+        padding: 0.25rem 0.5rem;
     }
 }
 </style>

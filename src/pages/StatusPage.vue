@@ -301,13 +301,15 @@
                         <VueMultiselect
                             v-model="selectedMonitor"
                             :options="sortedMonitorList"
-                            :multiple="false"
+                            :multiple="true"
                             :searchable="true"
                             :placeholder="$t('Add a monitor')"
                             label="name"
-                            trackBy="name"
+                            trackBy="id"
                             class="mt-3"
                             data-testid="monitor-select"
+                            @select="addSelectedMonitor"
+                            :custom-label="getMonitorLabel"
                         >
                             <template #option="{ option }">
                                 <div class="d-inline-flex">
@@ -637,17 +639,10 @@ export default {
          * @param {object} monitor Monitor to add
          * @returns {void}
          */
-        selectedMonitor(monitor) {
-            if (monitor) {
-                if (this.$root.publicGroupList.length === 0) {
-                    this.addGroup();
-                }
-
-                const firstGroup = this.$root.publicGroupList[0];
-
-                firstGroup.monitorList.push(monitor);
-                this.selectedMonitor = null;
-            }
+        selectedMonitor(monitors) {
+            // The addSelectedMonitor method will be called by the @select event
+            // This watcher is kept for compatibility but doesn't need to do anything
+            // as monitors are added individually via the event handler
         },
 
         // Set Theme
@@ -1050,6 +1045,31 @@ export default {
             } else {
                 return "";
             }
+        },
+
+        /**
+         * Add the selected monitor to the first group
+         * @param {object} monitor Monitor to add
+         * @returns {void}
+         */
+        addSelectedMonitor(monitor) {
+            if (monitor) {
+                if (this.$root.publicGroupList.length === 0) {
+                    this.addGroup();
+                }
+
+                const firstGroup = this.$root.publicGroupList[0];
+                firstGroup.monitorList.push(monitor);
+            }
+        },
+
+        /**
+         * Get the label for a monitor that includes the path name for searching
+         * @param {object} monitor Monitor object
+         * @returns {string} Label for the monitor
+         */
+        getMonitorLabel(monitor) {
+            return monitor.pathName || monitor.name;
         },
 
     }

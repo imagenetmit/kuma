@@ -71,6 +71,10 @@ class SetupDatabase {
         if (process.env.UPTIME_KUMA_DB_TYPE) {
             this.needSetup = false;
             log.info("setup-database", "UPTIME_KUMA_DB_TYPE is provided by env, try to override db-config.json");
+            log.info("setup-database", "UPTIME_KUMA_DB_TYPE: " + process.env.UPTIME_KUMA_DB_TYPE);
+            log.info("setup-database", "UPTIME_KUMA_DB_HOSTNAME: " + process.env.UPTIME_KUMA_DB_HOSTNAME);
+            log.info("setup-database", "UPTIME_KUMA_DB_PORT: " + process.env.UPTIME_KUMA_DB_PORT);
+            log.info("setup-database", "UPTIME_KUMA_DB_NAME: " + process.env.UPTIME_KUMA_DB_NAME);
             dbConfig.type = process.env.UPTIME_KUMA_DB_TYPE;
             dbConfig.hostname = process.env.UPTIME_KUMA_DB_HOSTNAME;
             dbConfig.port = process.env.UPTIME_KUMA_DB_PORT;

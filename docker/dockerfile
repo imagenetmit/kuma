@@ -1,16 +1,60 @@
-ARG BASE_IMAGE=imagenetmit/kuma:base2
+############################################
+# Build Base Image
+############################################
+FROM debian:bookworm-slim AS base2-slim
+ARG TARGETPLATFORM
 
-############################################
-# Build in Golang
-# Run npm run build-healthcheck-armv7 in the host first, otherwise it will be super slow where it is building the armv7 healthcheck
-# Check file: builder-go.dockerfile
-############################################
-FROM local-builder-go AS build_healthcheck
+# Install base dependencies
+RUN apt update && \
+    apt --yes --no-install-recommends install  \
+        sqlite3  \
+        ca-certificates \
+        iputils-ping  \
+        util-linux  \
+        dumb-init  \
+        curl  \
+        sudo \
+        nscd && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt --yes autoremove
+
+# Install apprise and python3-paho-mqtt
+RUN apt update && \
+    apt --yes --no-install-recommends install python3-paho-mqtt && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt --yes autoremove
+
+# Install cloudflared
+RUN curl https://pkg.cloudflare.com/cloudflare-main.gpg --output /usr/share/keyrings/cloudflare-main.gpg && \
+    echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared bullseye main' | tee /etc/apt/sources.list.d/cloudflared.list && \
+    apt update && \
+    apt install --yes --no-install-recommends -t stable cloudflared && \
+    cloudflared version && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt --yes autoremove
+
+# Full Base Image with MariaDB, Chromium and fonts
+FROM base2-slim AS base2
+ENV UPTIME_KUMA_ENABLE_EMBEDDED_MARIADB=1
+
+# Create node user first
+RUN groupadd -r node && useradd -r -g node -m -d /home/node node
+
+# Install Node.js 20
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs
+
+# Install additional dependencies
+RUN apt update && \
+    apt --yes --no-install-recommends install chromium fonts-indic fonts-noto fonts-noto-cjk mariadb-server && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt --yes autoremove && \
+    chown -R node:node /var/lib/mysql
 
 ############################################
 # Build in Node.js
 ############################################
-FROM imagenetmit/kuma:base2 AS build
+FROM base2 AS build
 USER node
 WORKDIR /app
 
@@ -20,13 +64,12 @@ COPY --chown=node:node package.json package.json
 COPY --chown=node:node package-lock.json package-lock.json
 RUN npm ci --omit=dev
 COPY . .
-COPY --chown=node:node --from=build_healthcheck /app/extra/healthcheck /app/extra/healthcheck
 RUN mkdir ./data
 
 ############################################
 # ⭐ Main Image
 ############################################
-FROM $BASE_IMAGE AS release
+FROM base2 AS release
 WORKDIR /app
 
 LABEL org.opencontainers.image.source="https://github.com/imagenetmit/kuma"
@@ -37,7 +80,7 @@ ENV UPTIME_KUMA_IS_CONTAINER=1
 COPY --chown=node:node --from=build /app /app
 
 EXPOSE 3001
-HEALTHCHECK --interval=60s --timeout=30s --start-period=180s --retries=5 CMD extra/healthcheck
+HEALTHCHECK --interval=60s --timeout=30s --start-period=180s --retries=5 CMD curl -f http://localhost:3001/ || exit 1
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["node", "server/server.js"]
 

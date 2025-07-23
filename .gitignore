@@ -31,3 +31,4 @@ extra/exe-builder/obj
 .vscode
 *.log
 tcpresponder/devices_df.csv
+tcpresponder/attributes_df(2).csv
